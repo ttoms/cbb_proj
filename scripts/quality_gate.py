@@ -10,6 +10,8 @@ RTL 轻量质量门控（开发期自检）
   3. 模块 .sv 内不写断言
   4. 可综合性禁用项（initial / force / #delay / casex / always @）
   5. case 必须有 default
+     - always_latch 默认禁止；仅 icg 行为模型可在同一行加
+       `// gate: allow-latch` 做行级豁免
   6. 实例名全大写
   7. 例化端口只连信号名 / 参数 / 常量
   8. 无对齐标记
@@ -190,11 +192,16 @@ class QualityGate:
         code_comments = clean(raw)
         code = clean(raw, mask_str=True)
 
+        allow_latch_lines = {
+            no for no, line in enumerate(raw.splitlines(), 1)
+            if re.search(r"//\s*gate:\s*allow-latch\b", line)
+        }
+
         self._check_file_and_module(code)
         self._check_header(raw, code)
         self._check_default_nettype(code)
         self._check_assertions(code)
-        self._check_constructs(code)
+        self._check_constructs(code, allow_latch_lines)
         self._check_cases(code)
         self._check_instances(code)
         self._check_port_connections(code)
@@ -273,7 +280,8 @@ class QualityGate:
         if not hits:
             self._pass(".sv 内无断言")
 
-    def _check_constructs(self, code):
+    def _check_constructs(self, code, allow_latch_lines=None):
+        allow_latch_lines = allow_latch_lines or set()
         checks = [
             (r"\binitial\b", "模块内禁止 initial"),
             (r"\bforce\b|\brelease\b", "禁止 force/release"),
@@ -284,12 +292,24 @@ class QualityGate:
         ]
         for pat, msg in checks:
             hits = list(re.finditer(pat, code))
+            allowed = []
+            if pat == r"\balways_latch\b":
+                allowed = [m for m in hits
+                           if self._line(code, m.start()) in allow_latch_lines]
+                hits = [m for m in hits
+                        if self._line(code, m.start()) not in allow_latch_lines]
+                for m in allowed:
+                    self._info(f"L{self._line(code, m.start())}: "
+                               "always_latch 已按行豁免（icg 行为模型）")
             for m in hits[:3]:
                 self._fail(f"L{self._line(code, m.start())}: {msg}")
             if len(hits) > 3:
                 self._fail(f"另有 {len(hits) - 3} 处：{msg}")
             if not hits:
-                self._pass(f"未发现：{msg.split('（')[0]}")
+                if allowed:
+                    self._pass("always_latch 仅出现在豁免行（icg 行为模型）")
+                else:
+                    self._pass(f"未发现：{msg.split('（')[0]}")
 
     def _check_cases(self, code):
         stack, count = [], 0
