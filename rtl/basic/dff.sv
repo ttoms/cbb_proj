@@ -8,12 +8,12 @@
 `default_nettype none
 
 module dff #(
-    parameter int W = 32
+    parameter   int W   =   32
 ) (
-    input  logic         clk,
-    input  logic         en,
-    input  logic [W-1:0] d,
-    output logic [W-1:0] q
+    input   logic           clk ,
+    input   logic           en  ,
+    input   logic [W -1:0]  d   ,
+    output  logic [W -1:0]  q
 );
 
     always_ff @(posedge clk) begin

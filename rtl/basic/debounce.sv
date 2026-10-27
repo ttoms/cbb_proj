@@ -8,12 +8,12 @@
 `default_nettype none
 
 module debounce #(
-    parameter int N = 4
+    parameter   int N   =   4
 ) (
-    input  logic clk,
-    input  logic rst_n,
-    input  logic in,
-    output logic out
+    input   logic   clk     ,
+    input   logic   rst_n   ,
+    input   logic   in      ,
+    output  logic   out
 );
 
     localparam int CNT_W = (N > 1) ? $clog2(N) : 1;

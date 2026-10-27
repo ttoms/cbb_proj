@@ -8,31 +8,31 @@
 `default_nettype none
 
 module fifo_sync #(
-    parameter int DATA_W = 32,
-    parameter int DEPTH  = 16
+    parameter   int DATA_W  =   32  ,
+    parameter   int DEPTH   =   16
 ) (
-    input  logic                        clk,
-    input  logic                        rst_n,
-    input  logic                        wr_vld,
-    output logic                        wr_rdy,
-    input  logic [DATA_W-1:0]           wr_data,
-    output logic                        rd_vld,
-    input  logic                        rd_rdy,
-    output logic [DATA_W-1:0]           rd_data,
-    output logic                        full,
-    output logic                        empty,
-    output logic [$clog2(DEPTH+1)-1:0]  count
+    input   logic                           clk     ,
+    input   logic                           rst_n   ,
+    input   logic                           wr_vld  ,
+    output  logic                           wr_rdy  ,
+    input   logic [DATA_W          -1:0]    wr_data ,
+    output  logic                           rd_vld  ,
+    input   logic                           rd_rdy  ,
+    output  logic [DATA_W          -1:0]    rd_data ,
+    output  logic                           full    ,
+    output  logic                           empty   ,
+    output  logic [$clog2(DEPTH+1) -1:0]    count
 );
 
     localparam int PTR_W = $clog2(DEPTH);
     localparam int CNT_W = $clog2(DEPTH + 1);
 
-    logic [DATA_W-1:0] mem [0:DEPTH-1];
-    logic [PTR_W-1:0]  wr_ptr;
-    logic [PTR_W-1:0]  rd_ptr;
-    logic [CNT_W-1:0]  count_q;
-    logic              wr_fire;
-    logic              rd_fire;
+    logic [DATA_W -1:0] mem     [0:DEPTH-1];
+    logic [PTR_W  -1:0] wr_ptr  ;
+    logic [PTR_W  -1:0] rd_ptr  ;
+    logic [CNT_W  -1:0] count_q ;
+    logic               wr_fire ;
+    logic               rd_fire ;
 
     generate
         if (DEPTH < 2 || ((DEPTH & (DEPTH - 1)) != 0)) begin : g_param_check

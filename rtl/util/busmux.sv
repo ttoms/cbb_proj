@@ -8,13 +8,13 @@
 `default_nettype none
 
 module busmux #(
-    parameter int N = 4,
-    parameter int W = 32
+    parameter   int N   =   4   ,
+    parameter   int W   =   32
 ) (
-    input  logic [N-1:0]       sel,
-    input  logic [N-1:0][W-1:0] data,
-    output logic [W-1:0]       data_out,
-    output logic               vld
+    input   logic [N -1:0]          sel         ,
+    input   logic [N -1:0] [W -1:0] data        ,
+    output  logic [W -1:0]          data_out    ,
+    output  logic                   vld
 );
 
     generate

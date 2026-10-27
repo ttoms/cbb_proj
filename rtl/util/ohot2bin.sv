@@ -8,11 +8,11 @@
 `default_nettype none
 
 module ohot2bin #(
-    parameter int IN_W = 4
+    parameter   int IN_W    =   4
 ) (
-    input  logic [IN_W-1:0]                        ohot,
-    output logic [((IN_W>1)?$clog2(IN_W):1)-1:0]   bin,
-    output logic                                   vld
+    input   logic [IN_W                      -1:0]  ohot    ,
+    output  logic [((IN_W>1)?$clog2(IN_W) :1)-1:0]  bin     ,
+    output  logic                                   vld
 );
 
     localparam int OUT_W = (IN_W > 1) ? $clog2(IN_W) : 1;

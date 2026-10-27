@@ -8,12 +8,12 @@
 `default_nettype none
 
 module pulse_stretch #(
-    parameter int N = 4
+    parameter   int N   =   4
 ) (
-    input  logic clk,
-    input  logic rst_n,
-    input  logic in_pulse,
-    output logic out_pulse
+    input   logic   clk         ,
+    input   logic   rst_n       ,
+    input   logic   in_pulse    ,
+    output  logic   out_pulse
 );
 
     localparam int CNT_W = (N > 1) ? $clog2(N) : 1;

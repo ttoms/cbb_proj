@@ -8,11 +8,11 @@
 `default_nettype none
 
 module arbiter_pri #(
-    parameter int N = 4
+    parameter   int N   =   4
 ) (
-    input  logic [N-1:0] req,
-    output logic [N-1:0] gnt,
-    output logic         gnt_vld
+    input   logic [N -1:0]  req     ,
+    output  logic [N -1:0]  gnt     ,
+    output  logic           gnt_vld
 );
 
     generate

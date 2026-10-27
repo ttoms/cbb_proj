@@ -8,14 +8,14 @@
 `default_nettype none
 
 module dffr #(
-    parameter int              W           = 32,
-    parameter logic [W-1:0]   RESET_VALUE = '0
+    parameter   int             W           =   32  ,
+    parameter   logic [W-1:0]   RESET_VALUE =   '0
 ) (
-    input  logic         clk,
-    input  logic         rst_n,
-    input  logic         en,
-    input  logic [W-1:0] d,
-    output logic [W-1:0] q
+    input   logic           clk     ,
+    input   logic           rst_n   ,
+    input   logic           en      ,
+    input   logic [W -1:0]  d       ,
+    output  logic [W -1:0]  q
 );
 
     always_ff @(posedge clk or negedge rst_n) begin

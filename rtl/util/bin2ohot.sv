@@ -8,10 +8,10 @@
 `default_nettype none
 
 module bin2ohot #(
-    parameter int W = 4
+    parameter   int W   =   4
 ) (
-    input  logic [W-1:0]     bin,
-    output logic [(1<<W)-1:0] ohot
+    input   logic [W      -1:0] bin     ,
+    output  logic [(1<<W) -1:0] ohot
 );
 
     localparam int OUT_W = 1 << W;

@@ -8,11 +8,11 @@
 `default_nettype none
 
 module rst_sync #(
-    parameter int STAGES = 2
+    parameter   int STAGES  =   2
 ) (
-    input  logic clk,
-    input  logic rst_n,
-    output logic rst_sync_n
+    input   logic   clk         ,
+    input   logic   rst_n       ,
+    output  logic   rst_sync_n
 );
 
     localparam int STAGES_MIN = 2;
