@@ -21,7 +21,7 @@ cbb_proj/
 │   ├── cdc/                     # CDC 同步 / 异步 FIFO
 │   ├── memory/                  # 同步 FIFO / RAM / ROM 包装
 │   ├── stream/                  # valid-ready 流控 / reg_slice / 位宽转换
-│   ├── arbiter/                 # 固定优先级 / RR / WRR / LRU / arbiter_wrap
+│   ├── arbiter/                 # arbiter_* 仲裁核 / arbiter_wrapper / arbmux / strmux
 │   ├── bus/                     # APB / AXI-Lite 粘合逻辑
 │   ├── io/                      # UART / SPI / I2C / Timer / IRQ
 │   └── util/                    # CRC / 格雷码 / 编码器
@@ -36,7 +36,7 @@ cbb_proj/
 ## 文档
 
 - [开发流程指南](docs/development-guide.md)：准入条件、复杂度分级、实现约束、自检/仿真、评审与交付。
-- [待开发 CBB 清单](docs/cbb-list.md)：36 项规划，含 P0 模板收编、P1~P3 待开发项与合并项。
+- [待开发 CBB 清单](docs/cbb-list.md)：39 项规划，含 P0 模板收编、P1~P3 待开发项与合并项。
 - [CBB 文档规范](docs/cbb/README.md)：每模块唯一文档的落点、章节必写/可省略规则与一致性要求。
 - [dff 示例文档](docs/cbb/dff.md)：简单 CBB 的单文档填写示例。
 - 编码规范细则以 `my_env/skills/rtl-developer/references/rtl-coding-standard.md` 为准。
@@ -59,10 +59,10 @@ cbb_proj/
 
 ## 首批目标
 
-P0 + P1 共 15 项：
+P0 + P1 共 18 项：
 
 - P0 收编：`dff`、`dffr`、`rst_sync`、`cdc_2ff`、`fifo_sync`
-- P1 开发：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`pri_arbiter`、`rr_arbiter`、`wrr_arbiter`、`lru_arbiter`、`arbiter_wrap`、`reg_slice`（含 `skid_buffer` 模式）
+- P1 开发：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`arbiter_pri`、`arbiter_rr`、`arbiter_wrr`、`arbiter_lru`、`arbiter_qrr`、`arbiter_wrapper`、`arbmux`、`strmux`、`reg_slice`（含 `skid_buffer` 模式）
 
 ## 快速开始
 

@@ -35,8 +35,8 @@ cbb_proj/
 | `rtl/basic` | 寄存器、复位、计数器、边沿/脉冲等基础单元 |
 | `rtl/cdc` | 跨时钟域同步、异步 FIFO |
 | `rtl/memory` | 同步 FIFO、RAM/ROM 包装 |
-| `rtl/stream` | valid-ready 流控、流水线、位宽转换 |
-| `rtl/arbiter` | 固定优先级 / RR / WRR / LRU 仲裁核及 `arbiter_wrap` 统一封装 |
+| `rtl/stream` | valid-ready 流控、`reg_slice`、流水线、位宽转换 |
+| `rtl/arbiter` | `arbiter_*` 仲裁核、`arbiter_wrapper` 统一封装、`arbmux` / `strmux` 选通 |
 | `rtl/bus` | APB / AXI-Lite 等总线粘合逻辑 |
 | `rtl/io` | UART / SPI / I2C / Timer / IRQ 等外设 |
 | `rtl/util` | CRC、格雷码、编码器等通用组合/时序工具 |
@@ -89,9 +89,9 @@ cbb_proj/
 
 ### 4.1 复杂度分级
 
-**简单模块**（直接实现）：单时钟、端口 ≤ 20、状态 < 4、无 FIFO / 仲裁 / 协议 / CDC。
+**简单模块**（直接实现）：单时钟、端口 ≤ 20、状态 < 4、无 FIFO / 状态化仲裁 / 协议 / CDC。
 
-**复杂模块**（详细设计先行）：时钟域 ≥ 2 或含 CDC、状态 ≥ 4、端口 > 20、含 FIFO / 仲裁 / 总线协议 / 完整数据通路。
+**复杂模块**（详细设计先行）：时钟域 ≥ 2 或含 CDC、状态 ≥ 4、端口 > 20、含 FIFO / 状态化仲裁 / 总线协议 / 完整数据通路。
 
 复杂 CBB 的设计内容写入**同一个模块文档** `docs/cbb/<module>.md`，在必写章节之外追加：
 

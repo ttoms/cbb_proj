@@ -9,14 +9,14 @@
 | 阶段 | 数量 | 说明 |
 |---|---:|---|
 | P0 基础件收编 | 5 | 来自 my_env 模板，补验收与目录收编 |
-| P1 高频基础件 | 10 | 计数器、边沿/脉冲、仲裁家族、可配置 register slice |
+| P1 高频基础件 | 13 | 计数器、边沿/脉冲、仲裁家族、仲裁 mux、可配置 register slice |
 | P2 数据通路与 CDC | 10 | CDC 同步、异步 FIFO、位宽转换、CRC/编码 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
-| **合计** | **36** | 5 项模板已有，31 项待开发（其中 20 项需先详细设计） |
+| **合计** | **39** | 5 项模板已有，34 项待开发（其中 23 项需先详细设计） |
 
 > `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §9。
 
-**建议首批迭代（P0 + P1，共 15 项）**：先收编 5 个基础件，再完成 10 个高频件，形成后续 CDC / FIFO / 总线开发的依赖底座。
+**建议首批迭代（P0 + P1，共 18 项）**：先收编 5 个基础件，再完成 13 个高频件，形成后续 CDC / FIFO / 总线开发的依赖底座。
 
 ## 2. P0：基础件收编（模板已有）
 
@@ -38,11 +38,14 @@
 | CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dff` | 待开发 | 复位后无假脉冲；输入抖动场景 |
 | CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `counter` | 待开发 | `N=1`、超长输入、背靠背脉冲 |
 | CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `counter` | 待开发 | 抖动/稳定边界、复位释放 |
-| CBB-ARB-001 | `pri_arbiter` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 待开发 | 无请求、全请求、优先级语义明确 |
-| CBB-ARB-002 | `rr_arbiter` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 指针回绕、单请求、全请求、公平性 |
-| CBB-ARB-003 | `wrr_arbiter` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 待架构 | 权重边界、零权重、公平带宽、无饿死 |
-| CBB-ARB-004 | `lru_arbiter` | `rtl/arbiter` | 最近最少使用仲裁核 | 复杂 | `dffr` | 待架构 | 历史更新、连续请求、无饿死、复位 |
-| CBB-ARB-005 | `arbiter_wrap` | `rtl/arbiter` | 仲裁器统一封装，`ARB_TYPE` 选择仲裁核 | 复杂 | `pri_arbiter` / `rr_arbiter` / `wrr_arbiter` / `lru_arbiter` | 待架构 | 四种 `ARB_TYPE` 分支、统一端口、非法类型报错 |
+| CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 待开发 | 无请求、全请求、优先级语义明确 |
+| CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 指针回绕、单请求、全请求、公平性 |
+| CBB-ARB-003 | `arbiter_wrr` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 待架构 | 权重边界、零权重、公平带宽、无饿死 |
+| CBB-ARB-004 | `arbiter_lru` | `rtl/arbiter` | 最近最少使用仲裁核 | 复杂 | `dffr` | 待架构 | 历史更新、连续请求、无饿死、复位 |
+| CBB-ARB-005 | `arbiter_qrr` | `rtl/arbiter` | QoS + 轮询仲裁核 | 复杂 | `dffr` | 待架构 | QoS 分组、同 QoS 轮询、高 QoS 优先、低 QoS 饿死说明 |
+| CBB-ARB-006 | `arbiter_wrapper` | `rtl/arbiter` | 仲裁器统一封装，`ARB_TYPE` 选择仲裁核 | 复杂 | `arbiter_pri` / `arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` | 待架构 | 五种 `ARB_TYPE` 分支、统一端口、非法类型报错 |
+| CBB-ARB-007 | `arbmux` | `rtl/arbiter` | flit 级选通 mux，内部集成 `arbiter_wrapper` | 复杂 | `arbiter_wrapper` | 待架构 | flit 粒度仲裁、选中通道 `rdy`、不丢数/不重复、各 `ARB_TYPE` 分支 |
+| CBB-ARB-008 | `strmux` | `rtl/arbiter` | stream 级选通 mux，内部集成 `arbiter_wrapper`，`GRAN` 选择 flit/packet 粒度 | 复杂 | `arbiter_wrapper` | 待架构 | `hop/top/vld/rdy/pld` 接口、flit/packet 粒度、packet 内不切换、各 `ARB_TYPE` 分支 |
 | CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 可配置 valid-ready 打拍切片，`RS_MODE` 选择 bypass/forward/backward/full | 复杂 | `dff` / `dffr` | 待架构 | 四种模式、反压不丢数/不重复、吞吐与延迟、模式参数非法值 |
 
 ## 4. P2：数据通路与 CDC
@@ -95,24 +98,50 @@
 - `RS_BYPASS` 仅用于时序允许的场景，不能作为默认。
 - 非法编码在 elaboration 阶段报错。
 
-### 6.2 仲裁器家族与 `arbiter_wrap`
+### 6.2 仲裁器家族与 `arbiter_wrapper`
 
-仲裁核保持独立、单一职责；`arbiter_wrap` 只做参数选择和端口统一，不复制仲裁算法。
+所有仲裁核统一命名为 `arbiter_*`，统一封装为 `arbiter_wrapper`。仲裁核保持独立、单一职责；`arbiter_wrapper` 只做参数选择和端口统一，不复制仲裁算法。
 
 | `ARB_TYPE` | 编码 | 仲裁核 | 语义 |
 |---|---:|---|---|
-| `ARB_FIXED` | `2'b00` | `pri_arbiter` | 固定优先级，索引小者优先 |
-| `ARB_RR` | `2'b01` | `rr_arbiter` | 轮询，保证长期公平 |
-| `ARB_WRR` | `2'b10` | `wrr_arbiter` | 加权轮询，按 `weight` 分配带宽 |
-| `ARB_LRU` | `2'b11` | `lru_arbiter` | 最近最少使用优先，降低饿死风险 |
+| `ARB_FIXED` | `3'b000` | `arbiter_pri` | 固定优先级，索引小者优先 |
+| `ARB_RR` | `3'b001` | `arbiter_rr` | 轮询，保证长期公平 |
+| `ARB_WRR` | `3'b010` | `arbiter_wrr` | 加权轮询，按 `weight` 分配带宽 |
+| `ARB_LRU` | `3'b011` | `arbiter_lru` | 最近最少使用优先，降低饿死风险 |
+| `ARB_QRR` | `3'b100` | `arbiter_qrr` | 先按 QoS 分级，同 QoS 内轮询 |
 
 统一接口：
 
 - `req[N-1:0]`、`gnt[N-1:0]` 独热，`gnt_vld = |gnt`。
 - `weight[N*WEIGHT_W-1:0]` 仅 `ARB_WRR` 使用，其余类型忽略。
-- `ARB_TYPE` 是 elaboration 参数，不是运行期切换；`generate case` 只综合选中的仲裁核。
-- `wrr_arbiter` 的 `weight=0` 视为不参与仲裁；全零时 `gnt_vld=0`。
+- `qos[N*QOS_W-1:0]` 仅 `ARB_QRR` 使用，其余类型忽略；QoS 数值越大优先级越高，同 QoS 内轮询。
+- `ARB_TYPE` 为 3 bit，elaboration 参数，不是运行期切换；`generate case` 只综合选中的仲裁核。
+- `arbiter_wrr` 的 `weight=0` 视为不参与仲裁；全零时 `gnt_vld=0`。
+- `arbiter_qrr` 在高 QoS 持续请求时可能饿死低 QoS，需在文档中明确；需要严格公平时改用 RR / WRR。
 - `N=1`、`req=0`、全请求、背靠背授予、非法 `ARB_TYPE` 均需覆盖。
+
+### 6.3 `arbmux` / `strmux`
+
+两类 mux 都只做选通，内部例化 `arbiter_wrapper`，不重复实现仲裁算法。
+
+| 模块 | 选通层级 | 接口 | 说明 |
+|---|---|---|---|
+| `arbmux` | flit 级 | flit 通道，至少 `vld/rdy/pld` | 每个 flit 独立仲裁，不保持 packet 边界；其余 flit 字段后续展开 |
+| `strmux` | stream 级 | `hop/top/vld/rdy/pld` | 只看到该子集，不包含 `rop/crdt`；`GRAN` 选择 flit/packet 粒度 |
+
+`strmux` 的 `GRAN`：
+
+| `GRAN` | 编码 | 行为 |
+|---|---:|---|
+| `GRAN_FLIT` | `1'b0` | 每个 flit 可重新仲裁，允许 flit 级切换 |
+| `GRAN_PACKET` | `1'b1` | 以 `hop` 为 packet 起点、`top` 为终点锁定选通，packet 内（含 `vld` 间隙）不切换（边界语义后续按链路层定义确认；默认） |
+
+通用要求：
+
+- 未被选中的输入通道 `rdy=0`；无请求时输出 `vld=0`。
+- 反压时不得丢数、不得重复、不得产生假 valid。
+- `ARB_TYPE` 从 mux 参数透传到 `arbiter_wrapper`，只综合选中的仲裁核。
+- `hop/top/rop/vld/rdy/crdt/pld` 的完整位宽与语义后续按链路层接口定义展开；当前 `strmux` 只依赖 `hop/top/vld/rdy/pld`。
 
 ## 7. 依赖关系速览
 
@@ -122,13 +151,13 @@ dff / dffr ──┬── counter ──┬── pulse_stretch
              │             ├── timer ── watchdog
              │             └── uart_tx / uart_rx / pwm
              ├── reg_slice（RS_BACKWARD 即 skid_buffer）
-             ├── fifo_sync ── fifo_sync_af / width_conv
-             └── pri_arbiter / rr_arbiter / wrr_arbiter / lru_arbiter
+             └── fifo_sync ── fifo_sync_af / width_conv
 
-pri_arbiter ─┐
-rr_arbiter ──┼── arbiter_wrap
-wrr_arbiter ─┤
-lru_arbiter ─┘
+arbiter_pri ─┐
+arbiter_rr ──┤
+arbiter_wrr ─┼── arbiter_wrapper ──┬── arbmux
+arbiter_lru ─┤                     └── strmux
+arbiter_qrr ─┘
 
 rst_sync ── 所有时序模块的复位释放
 
