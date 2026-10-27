@@ -13,10 +13,8 @@ cbb_proj/
 │   ├── cbb-list.md              # 待开发 CBB 清单 / 状态
 │   ├── cbb/                     # 每个 CBB 的文档
 │   │   ├── README.md            # 文档规范与索引
-│   │   ├── _template/           # README / design 模板
-│   │   └── <module>/
-│   │       ├── README.md        # 所有 CBB 必备：端口/参数/使用说明
-│   │       └── design.md        # 复杂 CBB 必备：详细设计
+│   │   ├── _template.md         # 单文档模板（标注必写/可省略章节）
+│   │   └── <module>.md          # 每个 CBB 唯一文档
 │   └── architecture/            # 跨 CBB / 子系统级架构方案
 ├── rtl/
 │   ├── basic/                   # DFF / 复位 / 计数器 / 边沿脉冲
@@ -39,22 +37,25 @@ cbb_proj/
 
 - [开发流程指南](docs/development-guide.md)：准入条件、复杂度分级、实现约束、自检/仿真、评审与交付。
 - [待开发 CBB 清单](docs/cbb-list.md)：34 项规划，含 P0 模板收编和 P1~P3 待开发项。
-- [CBB 文档规范](docs/cbb/README.md)：每项 CBB 的文档落点、必备章节与一致性要求。
-- [dff 示例文档](docs/cbb/dff/README.md)：端口表、参数表、使用说明的填写示例。
+- [CBB 文档规范](docs/cbb/README.md)：每模块唯一文档的落点、章节必写/可省略规则与一致性要求。
+- [dff 示例文档](docs/cbb/dff.md)：简单 CBB 的单文档填写示例。
 - 编码规范细则以 `my_env/skills/rtl-developer/references/rtl-coding-standard.md` 为准。
 
 ## CBB 文档要求
 
-每个 CBB 在 `docs/cbb/<module>/` 下维护文档：
+每个 CBB **只有一个文档**：`docs/cbb/<module>.md`。
 
-| 文档 | 适用对象 | 必备内容 |
+| 章节 | 简单 CBB | 复杂 CBB |
 |---|---|---|
-| `README.md` | 所有 CBB | 功能与范围、端口表、参数表、使用说明/例化示例、复位与 CDC、限制、验证状态、版本记录 |
-| `design.md` | 复杂 CBB | 模块划分、微架构、状态机、时序/PPA、复位/CDC、验证计划、风险与变更记录 |
+| 功能与范围、端口表、参数表、使用说明、复位与 CDC、限制、验证状态、版本记录 | 必须 | 必须 |
+| 微架构与数据流 | 可省略 | 必须 |
+| 状态机 | 可省略 | 必须（无 FSM 写“不适用”及原因） |
+| 时序、流水线与 PPA | 可省略 | 必须 |
+| 风险与未覆盖项 | 可省略 | 必须 |
 
-- 模块头注释只是代码内摘要，**不能替代** `README.md`。
+- 模块头注释只是代码内摘要，**不能替代**模块文档。
 - 文档与 RTL 同一次变更提交；端口/参数不一致或文档过期，不得标记为“已发布”。
-- 模板：[README 模板](docs/cbb/_template/README.md)、[design 模板](docs/cbb/_template/design.md)。
+- 模板：[CBB 文档模板](docs/cbb/_template.md)；章节规则：[CBB 文档规范](docs/cbb/README.md)。
 
 ## 首批目标
 
@@ -90,7 +91,7 @@ scripts/align.sh rtl/basic/<module>.sv
 
 - 模块名小写蛇形、文件名一致，一个文件一个 `module`。
 - 控制类寄存器用 `dffr`（异步复位），数据通路寄存器用 `dff`（无复位），均显式 `en`。
-- 每个 CBB 必须有 `docs/cbb/<module>/README.md`；复杂 CBB 另需 `design.md`。
+- 每个 CBB 只有一个文档 `docs/cbb/<module>.md`；复杂 CBB 在同一文档中补齐微架构、数据流、状态机等章节。
 - `.sv` 内不写断言；需要时同名 `.sva`，由 `SVA_ON` 在 `endmodule` 前 include。
 - 交付前必须通过 `quality_gate.py`（0 error）并执行 `align.sh`。
 - 不默认附带 Makefile、覆盖率报告等非模块功能向产物。

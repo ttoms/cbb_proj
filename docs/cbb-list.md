@@ -1,8 +1,8 @@
 # CBB 待开发清单
 
 > 配套文档：[开发流程指南](development-guide.md)
-> 状态定义：`模板已有` = my_env 已有参考实现，待收编验收；`待开发` = 简单 CBB，可直接实现；`待架构` = 复杂 CBB，先完成 `design.md` 详细设计再实现。
-> 文档落点：每项 CBB 在 `docs/cbb/<module>/` 下维护 `README.md`（端口/参数/使用说明，所有 CBB 必备）；复杂 CBB 另需 `design.md`（详细设计）。模板见 `docs/cbb/_template/`。
+> 状态定义：`模板已有` = my_env 已有参考实现，待收编验收；`待开发` = 简单 CBB，可直接实现；`待架构` = 复杂 CBB，先在同一模块文档中完成微架构/数据流/状态机等章节再实现。
+> 文档落点：每项 CBB 只维护一个文档 `docs/cbb/<module>.md`。所有 CBB 必写端口/参数/使用说明等基础章节；复杂 CBB 追加微架构、数据流、状态机、时序/PPA、风险章节。模板见 `docs/cbb/_template.md`。
 
 ## 1. 总览
 
@@ -26,7 +26,7 @@
 | CBB-BASIC-004 | `cdc_2ff` | `rtl/cdc` | 单 bit 2FF 同步器 | 简单 | - | 模板已有 | 仅限单 bit；多 bit 禁止裸 2FF |
 | CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready） | 复杂 | `dff` / `dffr` | 模板已有 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
 
-> 收编动作：复制模板到对应目录，按 `docs/cbb/_template/` 补 `README.md`（复杂件另补 `design.md`），完成验收后更新本清单状态为“已发布”。`dff` 已提供示例文档：[`docs/cbb/dff/README.md`](cbb/dff/README.md)。
+> 收编动作：复制模板为 `docs/cbb/<module>.md`，补全功能/端口/参数/使用说明（复杂件补齐微架构/数据流/状态机等章节），完成验收后更新本清单状态为“已发布”。`dff` 已提供示例文档：[`docs/cbb/dff.md`](cbb/dff.md)。
 
 ## 3. P1：高频基础件
 
@@ -97,8 +97,8 @@ apb_slave / axil_reg_if ── axil2apb
 
 每个 CBB 发布前至少满足：
 
-1. `docs/cbb/<module>/README.md` 已建，端口表、参数表、使用说明齐全，且与 `.sv` 一致。
-2. 复杂 CBB 的 `docs/cbb/<module>/design.md` 已建，模块划分、状态机、复位/CDC 与实现一致。
+1. `docs/cbb/<module>.md` 已建，端口表、参数表、使用说明齐全，且与 `.sv` 一致。
+2. 复杂 CBB 的唯一文档已包含微架构、数据流、状态机、时序/PPA、风险章节，且与实现一致。
 3. 接口、参数、复位/CDC、valid-ready 行为有明确说明。
 4. `quality_gate.py` 0 error；warning 已评估。
 5. 有定向 TB 且仿真 PASS；未跑的项在交付说明中列明。
