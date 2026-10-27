@@ -1,0 +1,22 @@
+// clkgate 断言与参数检查（由 SVA_ON 控制 include）
+
+initial begin
+    if (IDLE_CYCLES < 1) begin
+        $fatal(1, "[%m] IDLE_CYCLES must be >= 1, got %0d", IDLE_CYCLES);
+    end
+end
+
+// 复位期间保持时钟开启
+a_reset_active: assert property (
+    @(posedge clk) !rst_n |-> active
+);
+
+// wakeup 单拍即可请求开启
+a_wakeup_on: assert property (
+    @(posedge clk) disable iff (!rst_n) wakeup |=> active
+);
+
+// 非空闲时保持开启
+a_busy_on: assert property (
+    @(posedge clk) disable iff (!rst_n) (!idle) |=> active
+);

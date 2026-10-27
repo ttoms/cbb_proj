@@ -63,6 +63,7 @@
 | `pulse_stretch` | CBB-BASIC-007 | [`pulse_stretch.md`](pulse_stretch.md) | 简单件 |
 | `debounce` | CBB-BASIC-008 | [`debounce.md`](debounce.md) | 简单件 |
 | `icg` | CBB-BASIC-010 | [`icg.md`](icg.md) | 简单件 |
+| `clkgate` | CBB-BASIC-009 | [`clkgate.md`](clkgate.md) | 复杂件 |
 | `bin2ohot` | CBB-UTIL-005 | [`bin2ohot.md`](bin2ohot.md) | 简单件 |
 | `ohot2bin` | CBB-UTIL-006 | [`ohot2bin.md`](ohot2bin.md) | 简单件 |
 | `busmux` | CBB-UTIL-007 | [`busmux.md`](busmux.md) | 简单件 |

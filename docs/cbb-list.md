@@ -13,14 +13,14 @@
 | P2 数据通路、接口与保序 | 11 | 同步 FIFO 增强、位宽转换、CRC/编码、接口适配、流整形、链表/ID 池 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
 | P4 CDC（最低优先级，无需求不启动） | 5 | 单时钟项目，CDC 同步/异步 FIFO 无需求不启动 |
-| **合计** | **50** | 20 项已发布（首批 14 + 二批 6），1 项模板已有，29 项待实施 |
+| **合计** | **50** | 21 项已发布（首批 14 + 二批 7），1 项模板已有，28 项待实施 |
 
 > `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §10。
 
 **首批迭代（P0 4 项 + P1 10 个简单件，共 14 项，已完成）**：先收编 4 个基础件，再完成 10 个简单件。
 
 - 首批 P1 简单件：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`。
-- 第二批复杂件：`reg_slice`、`arbiter_rr`、`arbiter_wrr`、`arbiter_lru`、`arbiter_qrr`、`arbiter_wrapper`（已完成）；`clkgate`、`arbmux`、`strmux`（待启动）。
+- 第二批复杂件：`reg_slice`、`arbiter_rr`、`arbiter_wrr`、`arbiter_lru`、`arbiter_qrr`、`arbiter_wrapper`、`clkgate`（已完成）；`arbmux`、`strmux`（待启动）。
 - CDC 全部保持 P4，不进入首批；单时钟项目，无需求不启动。
 
 ## 2. P0：基础件收编（首批，已发布）
@@ -42,7 +42,7 @@
 | CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dffr` | 已发布 | 首批 | 复位后无假脉冲；输入抖动场景 |
 | CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `dffr` | 已发布 | 首批 | `N=1`、超长输入、背靠背脉冲 |
 | CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `dffr` | 已发布 | 首批 | 抖动/稳定边界、复位释放 |
-| CBB-BASIC-009 | `clkgate` | `rtl/basic` | 自动时钟门控，根据 `wakeup` / `idle` 自动开关时钟，内部调用 `icg` | 复杂 | `icg` | 待架构 | 二批 | wakeup 唤醒、idle 判定、自动开关钟、无毛刺、复位 |
+| CBB-BASIC-009 | `clkgate` | `rtl/basic` | 自动时钟门控，根据 `wakeup` / `idle` 自动开关时钟，内部调用 `icg` | 复杂 | `icg` / `dffr` | 已发布 | 二批 | wakeup 唤醒、idle 判定、自动开关钟、无毛刺、复位 |
 | CBB-BASIC-010 | `icg` | `rtl/basic` | latch 型标准单元 ICG 行为模型/包装 | 简单 | - | 已发布 | 首批 | latch 透明/锁存、enable 时序、`// gate: allow-latch` 豁免、仿真与综合替换一致 |
 | CBB-UTIL-005 | `bin2ohot` | `rtl/util` | 二进制 → 独热转换 | 简单 | - | 已发布 | 首批 | 全零、最大索引、位宽边界、输出仅一位有效 |
 | CBB-UTIL-006 | `ohot2bin` | `rtl/util` | 独热 → 二进制转换 | 简单 | - | 已发布 | 首批 | 单热、全零、多热行为、位宽边界 |
