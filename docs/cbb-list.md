@@ -1,7 +1,8 @@
 # CBB 待开发清单
 
 > 配套文档：[开发流程指南](development-guide.md)
-> 状态定义：`模板已有` = my_env 已有参考实现，待收编验收；`待开发` = 简单 CBB，可直接实现；`待架构` = 复杂 CBB，先出架构方案再实现。
+> 状态定义：`模板已有` = my_env 已有参考实现，待收编验收；`待开发` = 简单 CBB，可直接实现；`待架构` = 复杂 CBB，先完成 `design.md` 详细设计再实现。
+> 文档落点：每项 CBB 在 `docs/cbb/<module>/` 下维护 `README.md`（端口/参数/使用说明，所有 CBB 必备）；复杂 CBB 另需 `design.md`（详细设计）。模板见 `docs/cbb/_template/`。
 
 ## 1. 总览
 
@@ -11,7 +12,7 @@
 | P1 高频基础件 | 8 | 计数器、边沿/脉冲、仲裁、流控 |
 | P2 数据通路与 CDC | 10 | CDC 同步、异步 FIFO、位宽转换、CRC/编码 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
-| **合计** | **34** | 5 项模板已有，29 项待开发（其中 17 项需先架构） |
+| **合计** | **34** | 5 项模板已有，29 项待开发（其中 17 项需先详细设计） |
 
 **建议首批迭代（P0 + P1，共 13 项）**：先收编 5 个基础件，再完成 8 个高频件，形成后续 CDC / FIFO / 总线开发的依赖底座。
 
@@ -25,7 +26,7 @@
 | CBB-BASIC-004 | `cdc_2ff` | `rtl/cdc` | 单 bit 2FF 同步器 | 简单 | - | 模板已有 | 仅限单 bit；多 bit 禁止裸 2FF |
 | CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready） | 复杂 | `dff` / `dffr` | 模板已有 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
 
-> 收编动作：复制模板到对应目录，补模块级验收记录，更新本清单状态为“已发布”。
+> 收编动作：复制模板到对应目录，按 `docs/cbb/_template/` 补 `README.md`（复杂件另补 `design.md`），完成验收后更新本清单状态为“已发布”。`dff` 已提供示例文档：[`docs/cbb/dff/README.md`](cbb/dff/README.md)。
 
 ## 3. P1：高频基础件
 
@@ -96,13 +97,14 @@ apb_slave / axil_reg_if ── axil2apb
 
 每个 CBB 发布前至少满足：
 
-1. 接口、参数、复位/CDC、valid-ready 行为有明确说明。
-2. `quality_gate.py` 0 error；warning 已评估。
-3. 有定向 TB 且仿真 PASS；未跑的项在交付说明中列明。
-4. 协议/FSM/CDC 类 CBB 有同名 `.sva`，并由 `SVA_ON` 正确 include。
-5. 已执行 `align.sh`，代码无对齐标记。
-6. 复杂 CBB 的架构方案与实现一致，验证要点逐条覆盖。
-7. 本清单中的状态、依赖、备注已更新。
+1. `docs/cbb/<module>/README.md` 已建，端口表、参数表、使用说明齐全，且与 `.sv` 一致。
+2. 复杂 CBB 的 `docs/cbb/<module>/design.md` 已建，模块划分、状态机、复位/CDC 与实现一致。
+3. 接口、参数、复位/CDC、valid-ready 行为有明确说明。
+4. `quality_gate.py` 0 error；warning 已评估。
+5. 有定向 TB 且仿真 PASS；未跑的项在交付说明中列明。
+6. 协议/FSM/CDC 类 CBB 有同名 `.sva`，并由 `SVA_ON` 正确 include。
+7. 已执行 `align.sh`，代码无对齐标记。
+8. 本清单中的状态、依赖、备注已更新。
 
 ## 8. 暂不纳入首版
 

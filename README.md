@@ -11,7 +11,13 @@ cbb_proj/
 ├── docs/
 │   ├── development-guide.md     # 开发流程指南
 │   ├── cbb-list.md              # 待开发 CBB 清单 / 状态
-│   └── architecture/            # 复杂 CBB 架构方案
+│   ├── cbb/                     # 每个 CBB 的文档
+│   │   ├── README.md            # 文档规范与索引
+│   │   ├── _template/           # README / design 模板
+│   │   └── <module>/
+│   │       ├── README.md        # 所有 CBB 必备：端口/参数/使用说明
+│   │       └── design.md        # 复杂 CBB 必备：详细设计
+│   └── architecture/            # 跨 CBB / 子系统级架构方案
 ├── rtl/
 │   ├── basic/                   # DFF / 复位 / 计数器 / 边沿脉冲
 │   ├── cdc/                     # CDC 同步 / 异步 FIFO
@@ -33,7 +39,22 @@ cbb_proj/
 
 - [开发流程指南](docs/development-guide.md)：准入条件、复杂度分级、实现约束、自检/仿真、评审与交付。
 - [待开发 CBB 清单](docs/cbb-list.md)：34 项规划，含 P0 模板收编和 P1~P3 待开发项。
+- [CBB 文档规范](docs/cbb/README.md)：每项 CBB 的文档落点、必备章节与一致性要求。
+- [dff 示例文档](docs/cbb/dff/README.md)：端口表、参数表、使用说明的填写示例。
 - 编码规范细则以 `my_env/skills/rtl-developer/references/rtl-coding-standard.md` 为准。
+
+## CBB 文档要求
+
+每个 CBB 在 `docs/cbb/<module>/` 下维护文档：
+
+| 文档 | 适用对象 | 必备内容 |
+|---|---|---|
+| `README.md` | 所有 CBB | 功能与范围、端口表、参数表、使用说明/例化示例、复位与 CDC、限制、验证状态、版本记录 |
+| `design.md` | 复杂 CBB | 模块划分、微架构、状态机、时序/PPA、复位/CDC、验证计划、风险与变更记录 |
+
+- 模块头注释只是代码内摘要，**不能替代** `README.md`。
+- 文档与 RTL 同一次变更提交；端口/参数不一致或文档过期，不得标记为“已发布”。
+- 模板：[README 模板](docs/cbb/_template/README.md)、[design 模板](docs/cbb/_template/design.md)。
 
 ## 首批目标
 
@@ -69,6 +90,7 @@ scripts/align.sh rtl/basic/<module>.sv
 
 - 模块名小写蛇形、文件名一致，一个文件一个 `module`。
 - 控制类寄存器用 `dffr`（异步复位），数据通路寄存器用 `dff`（无复位），均显式 `en`。
+- 每个 CBB 必须有 `docs/cbb/<module>/README.md`；复杂 CBB 另需 `design.md`。
 - `.sv` 内不写断言；需要时同名 `.sva`，由 `SVA_ON` 在 `endmodule` 前 include。
 - 交付前必须通过 `quality_gate.py`（0 error）并执行 `align.sh`。
 - 不默认附带 Makefile、覆盖率报告等非模块功能向产物。
