@@ -24,7 +24,7 @@ module binmux #(
 always_comb begin
     data_out = '0;
     vld      = 1'b0;
-    if (sel < N) begin
+    if (int'(sel) < N) begin
         data_out = data[sel];
         vld      = 1'b1;
     end

@@ -49,6 +49,6 @@ rst_sync #(
 |---|---|
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/basic/rst_sync_tb.sv` PASS（异步立即拉低、释放后经 2 拍拉高、运行中再次异步复位） |
-| SVA | `rst_sync.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `rst_sync.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | 非法 `STAGES` 的参数检查未跑（仅验证合法参数路径）；已另验证 `STAGES=1` 经钳位后按 2 级正常工作、无非法位选；未做门级亚稳态建模 |

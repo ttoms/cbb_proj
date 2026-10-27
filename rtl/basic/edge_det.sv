@@ -19,7 +19,7 @@ module edge_det (
     output logic both
 );
 
-localparam logic EN_ALWAYS  = 1'b1;
+localparam logic EN_ALWAYS  = 1'b1;  // 每拍采样输入
 localparam logic RESET_ZERO = 1'b0;
 
 logic sig_q;

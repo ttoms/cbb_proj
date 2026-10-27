@@ -23,7 +23,7 @@ module debounce #(
 
 localparam int CNT_W = (N > 1) ? $clog2(N) : 1;
 
-localparam logic [CNT_W-1:0] HOLD = N - 1;
+localparam logic [CNT_W-1:0] HOLD = CNT_W'(N - 1);
 
 logic [CNT_W -1:0]  cnt         ;
 logic [CNT_W -1:0]  nxt_cnt     ;

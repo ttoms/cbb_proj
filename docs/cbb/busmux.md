@@ -50,6 +50,6 @@ busmux #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED） |
 | 定向 TB | `tb/util/busmux_tb.sv` PASS（N=4/W=8：四路单热、无选择、多热视为无选择；N=2/W=32：32 位数据透传与无选择） |
-| SVA | `busmux.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `busmux.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | 未覆盖 `N=1`；未做更大 `N`/`W` 的综合面积与时序评估 |

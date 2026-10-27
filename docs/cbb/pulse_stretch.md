@@ -50,6 +50,6 @@ pulse_stretch #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED，对齐后复跑） |
 | 定向 TB | `tb/basic/pulse_stretch_tb.sv` PASS（`N=2`/`N=1`、超长输入、背靠背脉冲） |
-| SVA | `pulse_stretch.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `pulse_stretch.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | 未覆盖 `N>2`、随机脉宽和 `N<1` 非法参数报错路径 |

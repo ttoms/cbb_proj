@@ -81,8 +81,8 @@ fifo_sync #(
 |---|---|
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/memory/fifo_sync_tb.sv` PASS（`DEPTH=2`：满/空边界、满时写阻塞、指针回绕、写满后读空、同拍读写条目数不变、数据顺序） |
-| SVA | `fifo_sync.sva` 参数检查 + 4 条并发断言 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `fifo_sync.sva` 参数检查 + 3 条并发断言；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | `DEPTH > 2` 随机压力、`DATA_W=1`、复位发生在传输中、非法 `DEPTH` 的参数检查未跑（仅验证合法参数路径）、`rd_data` 读 mux 时序、门级/综合面积 |
 
 ## 9. 微架构与数据流 [C]

@@ -5,7 +5,7 @@
 // Features :
 //   - 复位异步拉低立即生效
 //   - 释放经 STAGES 级同步，避免复位撤销亚稳态
-//   - STAGES 小于 2 时钳位为 2 并在 elaboration 阶段报错
+//   - STAGES 小于 2 时钳位为 2；参数检查在 rst_sync.sva（SVA_ON）
 // Parameters :
 //   STAGES - 同步级数，默认 2，必须 >= 2
 // Limitations :
@@ -34,7 +34,7 @@ dffr #(
 ) U_RST_SYNC_FF (
     .clk    (clk                ),
     .rst_n  (rst_async_n        ),
-    .en     (1'b1               ),
+    .en     (1'b1               ),  // 每拍加载同步链
     .d      (nxt_rst_sync_ff    ),
     .q      (rst_sync_ff        )
 );

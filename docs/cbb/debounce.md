@@ -49,6 +49,6 @@ debounce #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED，对齐后复跑） |
 | 定向 TB | `tb/basic/debounce_tb.sv` PASS（`N=3`，稳定 1/2 拍不翻转、稳定 3 拍翻转、1/2 拍抖动被拒绝） |
-| SVA | `debounce.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `debounce.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | 未覆盖 `N=1`/`N=2` 参数边界、真实机械抖动模型和异步输入 |

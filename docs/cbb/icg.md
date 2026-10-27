@@ -47,5 +47,5 @@ icg U_ICG (
 | `quality_gate.py` | 0 error（PASSED，`always_latch` 行级豁免；对齐后复跑） |
 | 定向 TB | `tb/basic/icg_tb.sv` PASS（`en=0` 恒低、`en=1` 跟随 `clk`、低电平改 `en` 无毛刺） |
 | SVA | 不需要（简单单元） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| 仿真器 | iverilog 11/12 均通过 |
 | 未覆盖项 | 未做门级/工艺库 ICG 单元对比，未覆盖上电 X 态与 test bypass |

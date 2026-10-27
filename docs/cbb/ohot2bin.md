@@ -46,6 +46,6 @@ ohot2bin #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED） |
 | 定向 TB | `tb/util/ohot2bin_tb.sv` PASS（IN_W=4：单热/全零/多热取最高；IN_W=1 位宽下界；IN_W=8 位宽上界与最大索引 7） |
-| SVA | `ohot2bin.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `ohot2bin.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | 未覆盖 `IN_W` 非 2 的幂（如 3、5）；未做综合面积与时序评估 |

@@ -21,7 +21,7 @@ logic en_latched;
 
 always_latch begin // gate: allow-latch
     if (!clk) begin
-        en_latched <= en;
+        en_latched = en;
     end
 end
 

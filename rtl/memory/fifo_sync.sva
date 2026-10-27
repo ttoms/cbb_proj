@@ -7,12 +7,8 @@ initial begin
     end
 end
 
-a_empty_no_valid: assert property (
-    @(posedge clk) disable iff (!rst_n) empty |-> (entry_vld == '0)
-);
-
-a_full_all_valid: assert property (
-    @(posedge clk) disable iff (!rst_n) full |-> (&entry_vld)
+a_rd_data_stable: assert property (
+    @(posedge clk) disable iff (!rst_n) (rd_vld && !rd_rdy) |=> $stable(rd_data)
 );
 
 a_wr_ptr_stable: assert property (

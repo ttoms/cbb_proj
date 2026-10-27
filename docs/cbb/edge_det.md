@@ -52,5 +52,5 @@ edge_det U_EDGE (
 | `quality_gate.py` | 0 error（PASSED，对齐后复跑） |
 | 定向 TB | `tb/basic/edge_det_tb.sv` PASS（上升/下降/双边沿、复位后无假脉冲） |
 | SVA | 不需要（单级寄存器 + 组合输出） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| 仿真器 | iverilog 11/12 均通过 |
 | 未覆盖项 | 未覆盖异步输入、抖动输入与跨时钟域场景 |

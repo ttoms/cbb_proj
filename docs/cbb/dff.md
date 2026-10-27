@@ -50,5 +50,5 @@ dff #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/basic/dff_tb.sv` PASS |
 | SVA | 不需要（单级寄存器） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
-| 未覆盖项 | `W=1` 未单独跑；无复位上电值属设计选择，不做检查；verilator 5.020 编译/仿真通过；未做形式化 |
+| 仿真器 | iverilog 11/12 均通过 |
+| 未覆盖项 | `W=1` 未单独跑；无复位上电值属设计选择，不做检查；未做形式化 |

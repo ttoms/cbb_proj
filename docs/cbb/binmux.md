@@ -50,6 +50,6 @@ binmux #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED） |
 | 定向 TB | `tb/util/binmux_tb.sv` PASS（N=3/W=8：正常选择 0~2、`sel=3` 越界无选择；N=8/W=16：16 位数据 0/3/7 路选通） |
-| SVA | `binmux.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| SVA | `binmux.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
 | 未覆盖项 | 未覆盖 `N=1`（`sel` 位宽 1）与其他非 2 的幂 `N`；未做综合面积与时序评估 |
