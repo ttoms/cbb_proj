@@ -1,0 +1,30 @@
+// arbiter_qrr 断言与参数检查（由 SVA_ON 控制 include）
+
+initial begin
+    if (N < 1) begin
+        $fatal(1, "[%m] N must be >= 1, got %0d", N);
+    end
+    if (QOS_W < 1) begin
+        $fatal(1, "[%m] QOS_W must be >= 1, got %0d", QOS_W);
+    end
+end
+
+// 授权至多一路
+a_gnt_onehot: assert property (
+    @(posedge clk) disable iff (!rst_n) gnt_vld |-> $onehot(gnt)
+);
+
+// 有请求必有授权，无请求必无授权
+a_gnt_vld_req: assert property (
+    @(posedge clk) disable iff (!rst_n) (gnt_vld == (|req))
+);
+
+// 授权只能落在请求位图上
+a_gnt_subset: assert property (
+    @(posedge clk) disable iff (!rst_n) ((gnt & ~req) == '0)
+);
+
+// 授权只能落在最高 QoS 组内
+a_gnt_high_qos: assert property (
+    @(posedge clk) disable iff (!rst_n) ((gnt & ~req_hi) == '0)
+);

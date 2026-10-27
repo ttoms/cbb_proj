@@ -70,4 +70,6 @@
 | `arbiter_pri` | CBB-ARB-001 | [`arbiter_pri.md`](arbiter_pri.md) | 简单件 |
 | `arbiter_rr` | CBB-ARB-002 | [`arbiter_rr.md`](arbiter_rr.md) | 复杂件 |
 | `arbiter_wrr` | CBB-ARB-003 | [`arbiter_wrr.md`](arbiter_wrr.md) | 复杂件 |
+| `arbiter_lru` | CBB-ARB-004 | [`arbiter_lru.md`](arbiter_lru.md) | 复杂件 |
+| `arbiter_qrr` | CBB-ARB-005 | [`arbiter_qrr.md`](arbiter_qrr.md) | 复杂件 |
 | `reg_slice` | CBB-STREAM-002 | [`reg_slice.md`](reg_slice.md) | 复杂件 |
