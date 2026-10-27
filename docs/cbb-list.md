@@ -20,7 +20,7 @@
 **首批迭代（P0 4 项 + P1 10 个简单件，共 14 项，已完成）**：先收编 4 个基础件，再完成 10 个简单件。
 
 - 首批 P1 简单件：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`。
-- 第二批复杂件：`clkgate`、`arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` / `arbiter_wrapper`、`arbmux`、`strmux`、`reg_slice`。
+- 第二批复杂件：`reg_slice`（已完成）；`clkgate`、`arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` / `arbiter_wrapper`、`arbmux`、`strmux`（待启动）。
 - CDC 全部保持 P4，不进入首批；单时钟项目，无需求不启动。
 
 ## 2. P0：基础件收编（首批，已发布）
@@ -56,7 +56,7 @@
 | CBB-ARB-006 | `arbiter_wrapper` | `rtl/arbiter` | 仲裁器统一封装，`ARB_TYPE` 选择仲裁核 | 复杂 | `arbiter_pri` / `arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` | 待架构 | 二批 | 五种 `ARB_TYPE` 分支、统一端口、非法类型报错 |
 | CBB-ARB-007 | `arbmux` | `rtl/arbiter` | flit 级选通 mux，内部集成 `arbiter_wrapper` | 复杂 | `arbiter_wrapper` | 待架构 | 二批 | flit 粒度仲裁、选中通道 `rdy`、不丢数/不重复、各 `ARB_TYPE` 分支 |
 | CBB-ARB-008 | `strmux` | `rtl/arbiter` | stream 级选通 mux，内部集成 `arbiter_wrapper`，`GRAN` 选择 flit/packet 粒度 | 复杂 | `arbiter_wrapper` | 待架构 | 二批 | `hop/top/vld/rdy/pld` 接口、flit/packet 粒度、packet 内不切换、各 `ARB_TYPE` 分支 |
-| CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 可配置 valid-ready 打拍切片，`RS_MODE` 选择 bypass/forward/backward/full | 复杂 | `dff` / `dffr` | 待架构 | 二批 | 四种模式、反压不丢数/不重复、吞吐与延迟、模式参数非法值 |
+| CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 可配置 valid-ready 打拍切片，`RS_MODE` 选择 bypass/forward/backward/full | 复杂 | `dff` / `dffr` | 已发布 | 二批 | 四种模式、反压不丢数/不重复、吞吐与延迟、模式参数非法值 |
 
 ## 4. P2：数据通路、接口与保序
 
@@ -119,7 +119,8 @@
 - 目标吞吐均为 1 项/拍（反压时 0）；所有模式必须不丢数、不重复、不制造假 valid。
 - `RS_BACKWARD` / `RS_FULL` 内含 skid 存储，反压时先吸收当前数据再拉低上游 `rdy`。
 - `RS_BYPASS` 仅用于时序允许的场景，不能作为默认。
-- 非法编码在 elaboration 阶段报错。
+- 2 bit 编码 `00`~`11` 全部合法，不存在非法编码；`default` 分支按 `RS_FULL` 防御。
+- 实现：`rtl/stream/reg_slice.sv`；文档：`docs/cbb/reg_slice.md`。
 
 ### 7.2 仲裁器家族与 `arbiter_wrapper`
 

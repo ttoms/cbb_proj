@@ -2,7 +2,7 @@
 
 可复用数字 IC 公共构建模块（CBB）库，开发基线来自 `my_env` 仓库的 `rtl-developer` skill。
 
-当前已完成**首批 14 项 CBB**（P0 基础件 4 项 + P1 简单件 10 项）。业务模块的寄存器统一例化 `dff` / `dffr`，全部通过质量门控与定向仿真；第二批复杂件待启动。
+当前已完成**首批 14 项 CBB**（P0 基础件 4 项 + P1 简单件 10 项）和**第二批 `reg_slice`**。业务模块的寄存器统一例化 `dff` / `dffr`，全部通过质量门控与定向仿真；其余第二批复杂件待启动。
 
 ## 目录框架
 
@@ -60,7 +60,7 @@ P0 4 项 + P1 10 个简单件，共 14 项（CDC 不进入首批），均已发�
 
 - P0 收编：`dff`、`dffr`、`rst_sync`、`fifo_sync`
 - P1 开发：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`
-- 第二批：`clkgate`、`arbiter_rr` / `wrr` / `lru` / `qrr`、`arbiter_wrapper`、`arbmux`、`strmux`、`reg_slice`（含 `skid_buffer` 模式）
+- 第二批：`reg_slice` 已完成（含 `skid_buffer` 模式）；`clkgate`、`arbiter_rr` / `wrr` / `lru` / `qrr`、`arbiter_wrapper`、`arbmux`、`strmux` 待启动
 
 ## 快速开始
 

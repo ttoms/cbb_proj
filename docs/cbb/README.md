@@ -68,3 +68,4 @@
 | `busmux` | CBB-UTIL-007 | [`busmux.md`](busmux.md) | 简单件 |
 | `binmux` | CBB-UTIL-008 | [`binmux.md`](binmux.md) | 简单件 |
 | `arbiter_pri` | CBB-ARB-001 | [`arbiter_pri.md`](arbiter_pri.md) | 简单件 |
+| `reg_slice` | CBB-STREAM-002 | [`reg_slice.md`](reg_slice.md) | 复杂件 |

@@ -1,0 +1,14 @@
+//=============================================================================
+// SVA for reg_slice
+// Checks parameter legality only; all four RS_MODE encodings are valid.
+//=============================================================================
+`ifndef REG_SLICE_SVA
+`define REG_SLICE_SVA
+
+initial begin
+    if (W < 1) begin
+        $fatal(1, "reg_slice: W must be >= 1");
+    end
+end
+
+`endif
