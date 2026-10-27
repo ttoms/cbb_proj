@@ -68,6 +68,9 @@
 | `ohot2bin` | CBB-UTIL-006 | [`ohot2bin.md`](ohot2bin.md) | 简单件 |
 | `busmux` | CBB-UTIL-007 | [`busmux.md`](busmux.md) | 简单件 |
 | `binmux` | CBB-UTIL-008 | [`binmux.md`](binmux.md) | 简单件 |
+| `ohot_pri_enc` | CBB-UTIL-002 | [`ohot_pri_enc.md`](ohot_pri_enc.md) | 简单件 |
+| `gray_conv` | CBB-UTIL-003 | [`gray_conv.md`](gray_conv.md) | 简单件 |
+| `parity` | CBB-UTIL-004 | [`parity.md`](parity.md) | 简单件 |
 | `arbiter_pri` | CBB-ARB-001 | [`arbiter_pri.md`](arbiter_pri.md) | 简单件 |
 | `arbiter_rr` | CBB-ARB-002 | [`arbiter_rr.md`](arbiter_rr.md) | 复杂件 |
 | `arbiter_wrr` | CBB-ARB-003 | [`arbiter_wrr.md`](arbiter_wrr.md) | 复杂件 |

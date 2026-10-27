@@ -1,0 +1,6 @@
+// ohot_pri_enc 参数检查（仅验证，不参与综合）
+initial begin
+    if (IN_W < 1) begin
+        $fatal(1, "[%m] IN_W must be >= 1, got %0d", IN_W);
+    end
+end
