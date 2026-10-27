@@ -33,12 +33,6 @@ logic               in_diff     ;
 logic               cnt_en      ;
 logic               out_en      ;
 
-generate
-    if (N < 1) begin : g_param_check
-        $error("debounce: N must be >= 1");
-    end
-endgenerate
-
 assign in_diff = in ^ out_q;
 assign out     = out_q;
 assign cnt_en  = in_diff | (cnt != '0);
@@ -80,6 +74,10 @@ dffr #(
     .d      (nxt_out_q  ),
     .q      (out_q      )
 );
+
+`ifdef SVA_ON
+`include "debounce.sva"
+`endif
 
 endmodule
 

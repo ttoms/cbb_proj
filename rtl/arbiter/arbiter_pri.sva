@@ -1,0 +1,6 @@
+// arbiter_pri 参数检查（仅验证，不参与综合）
+initial begin
+    if (N < 1) begin
+        $fatal(1, "[%m] N must be >= 1, got %0d", N);
+    end
+end

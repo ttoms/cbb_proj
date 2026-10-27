@@ -38,7 +38,7 @@ valid-ready 约定：`wr_vld` / `rd_vld` 与数据同周期，`vld` 不依赖 `r
 | `DATA_W` | `int` | `32` | `DATA_W >= 1` | 数据位宽 |
 | `DEPTH` | `int` | `16` | 2 的幂且 `>= 2` | 条目数 |
 
-参数约束：`DEPTH` 非 2 的幂或小于 2 时，generate 中以 `$error` 报错；指针位宽 `PTR_W = $clog2(DEPTH)`。`fifo_sync.sva` 另含 `DATA_W` 范围与 `DEPTH` 约束检查。
+参数约束：`DEPTH` 非 2 的幂或小于 2 时，由 `fifo_sync.sva` 的参数检查报错；指针位宽 `PTR_W = $clog2(DEPTH)`。RTL 内不含 `$error`/`$fatal`，参数检查只在 `SVA_ON` 下编译。
 
 ## 5. 使用说明 [M]
 - **时钟/复位**：单时钟；`rst_n` 异步拉低、同步释放，建议由 `rst_sync` 产生。复位清 `wr_ptr` / `rd_ptr` / `entry_vld`，不清 `mem`。
@@ -81,9 +81,9 @@ fifo_sync #(
 |---|---|
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/memory/fifo_sync_tb.sv` PASS（`DEPTH=2`：满/空边界、满时写阻塞、指针回绕、写满后读空、同拍读写条目数不变、数据顺序） |
-| SVA | `fifo_sync.sva` 已提供（参数检查 + 4 条并发断言），未跑（未定义 `SVA_ON`，iverilog 不支持 `assert property`，环境无 verilator） |
-| 仿真器 | iverilog 12.0 |
-| 未覆盖项 | `DEPTH > 2` 随机压力、`DATA_W=1`、复位发生在传输中、非法 `DEPTH` 的 elaboration `$error` 未能在 iverilog 观测、`rd_data` 读 mux 时序、门级/综合面积 |
+| SVA | `fifo_sync.sva` 参数检查 + 4 条并发断言 PASS（verilator 5.020，`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| 未覆盖项 | `DEPTH > 2` 随机压力、`DATA_W=1`、复位发生在传输中、非法 `DEPTH` 的参数检查未跑（仅验证合法参数路径）、`rd_data` 读 mux 时序、门级/综合面积 |
 
 ## 9. 微架构与数据流 [C]
 - **模块划分**：单模块，无子模块。内部例化 `U_WR_PTR` / `U_RD_PTR` / `U_ENTRY_VLD` 三个 `dffr`，以及 `gen_mem[i].U_MEM` 共 `DEPTH` 个无复位 `dff`。
@@ -134,7 +134,7 @@ fifo_sync #(
 - **取舍**：`entry_vld` 方案比“指针附加位 + count”多 `DEPTH` 位触发器，但省掉计数器比较并让 `full/empty` 更直观；show-ahead 省一级输出寄存，代价是组合读 mux。
 
 ## 12. 风险与未覆盖项 [C]
-- **风险**：`full` 时同拍读不能补写，满边界存在吞吐气泡；`DEPTH` 较大时 `entry_vld` 归约和读 mux 延迟上升；`DEPTH` 参数非法时依赖 elaboration `$error`，部分仿真器（如 iverilog 12.0）不执行 generate 内 `$error`，需在集成时保证参数合法。
+- **风险**：`full` 时同拍读不能补写，满边界存在吞吐气泡；`DEPTH` 较大时 `entry_vld` 归约和读 mux 延迟上升；`DEPTH` 参数非法时依赖 `fifo_sync.sva` 的参数检查，未定义 `SVA_ON` 时不会报错，需在集成时保证参数合法。
 - **限制**：2 的幂深度；单时钟；无几乎满/空标志；无 `count`；`mem` 不复位，依赖 `entry_vld` 保证不读出未写数据。
 - **未覆盖项**：`DEPTH > 2` 的随机压力与 scoreboard、`DATA_W=1` 边界、复位发生在读写传输中的行为、`rd_data` 读 mux 的时序/面积、门级仿真与综合结果。
 

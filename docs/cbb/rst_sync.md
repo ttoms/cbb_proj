@@ -20,9 +20,9 @@
 ## 4. 参数表
 | 参数 | 类型 | 默认值 | 合法范围 | 说明 |
 |---|---|---|---|---|
-| `STAGES` | `int` | `2` | `STAGES >= 2` | 同步级数；小于 2 时钳位为 2 并 `$error`，建议不超过 8 |
+| `STAGES` | `int` | `2` | `STAGES >= 2` | 同步级数；小于 2 时钳位为 2，建议不超过 8；参数检查在 `rst_sync.sva` |
 
-参数约束：`STAGES < 2` 时用 localparam 钳位为 2，保证不会产生非法位选；同时在 generate 中 `$error` 报错。`rst_sync.sva` 的参数检查给出 `2 <= STAGES <= 8` 的建议范围。
+参数约束：`STAGES < 2` 时用 localparam 钳位为 2，保证不会产生非法位选；RTL 内不含 `$error`/`$fatal`，参数检查由 `rst_sync.sva` 的 `initial $fatal` 完成（`SVA_ON`），给出 `2 <= STAGES <= 8` 的建议范围。
 
 ## 5. 使用说明
 - **时钟/复位/初始化**：`rst_async_n` 异步拉低后 `rst_n` 立即为低；释放后经 `STAGES` 个 `clk` 上升沿 `rst_n` 拉高。
@@ -49,6 +49,6 @@ rst_sync #(
 |---|---|
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/basic/rst_sync_tb.sv` PASS（异步立即拉低、释放后经 2 拍拉高、运行中再次异步复位） |
-| SVA | `rst_sync.sva` 仅含参数检查，未跑（未定义 `SVA_ON`） |
-| 仿真器 | iverilog 12.0 |
-| 未覆盖项 | 非法 `STAGES` 的 elaboration `$error` 未能在 iverilog 观测（工具不执行 generate 内 `$error`）；已另验证 `STAGES=1` 经钳位后按 2 级正常工作、无非法位选；未做门级亚稳态建模，未跑 verilator |
+| SVA | `rst_sync.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| 未覆盖项 | 非法 `STAGES` 的参数检查未跑（仅验证合法参数路径）；已另验证 `STAGES=1` 经钳位后按 2 级正常工作、无非法位选；未做门级亚稳态建模 |

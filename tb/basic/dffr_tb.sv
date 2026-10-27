@@ -37,12 +37,14 @@ module dffr_tb;
     endtask
 
     initial begin
-        rst_n  = 1'b0;
+        rst_n  = 1'b1;
         en     = 1'b0;
         d      = '0;
         errors = 0;
 
-        #2;
+        #1;
+        rst_n = 1'b0;
+        #1;
         check_q(8'h5A, "复位值（异步、无时钟沿）");
 
         rst_n = 1'b1;

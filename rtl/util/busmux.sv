@@ -25,12 +25,6 @@ logic sel_ohot;
 
 assign sel_ohot = (sel != '0) && ((sel & (sel - 1'b1)) == '0);
 
-generate
-    if (N < 1 || W < 1) begin : g_param_check
-        $error("busmux: N and W must be >= 1");
-    end
-endgenerate
-
 always_comb begin
     data_out = '0;
     vld      = sel_ohot;
@@ -40,6 +34,10 @@ always_comb begin
         end
     end
 end
+
+`ifdef SVA_ON
+`include "busmux.sva"
+`endif
 
 endmodule
 

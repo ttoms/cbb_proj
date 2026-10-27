@@ -46,6 +46,6 @@ arbiter_pri #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED） |
 | 定向 TB | `tb/arbiter/arbiter_pri_tb.sv` PASS（N=4：无请求、四路单请求、两两组合的索引优先级、全请求） |
-| SVA | 不需要（纯组合） |
-| 仿真器 | iverilog 12.0（`-g2012`，未定义 `SVA_ON`） |
+| SVA | `arbiter_pri.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
 | 未覆盖项 | 未覆盖 `N=1` / `N>4`；未做综合面积与时序评估 |

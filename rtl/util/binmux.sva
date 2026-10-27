@@ -1,0 +1,6 @@
+// binmux 参数检查（仅验证，不参与综合）
+initial begin
+    if (N < 1 || W < 1) begin
+        $fatal(1, "[%m] N and W must be >= 1, got N=%0d W=%0d", N, W);
+    end
+end

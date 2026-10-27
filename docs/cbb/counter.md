@@ -59,5 +59,5 @@ counter #(
 | `quality_gate.py` | 0 error（PASSED，对齐后复跑） |
 | 定向 TB | `tb/basic/counter_tb.sv` PASS（`W=8`，`SATURATE=0/1` 双实例） |
 | SVA | 不需要（简单计数逻辑） |
-| 仿真器 | iverilog 12.0（环境未安装 verilator） |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
 | 未覆盖项 | 未做随机激励、`W>8` 大位宽和 `W=1` 边界仿真 |

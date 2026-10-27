@@ -17,16 +17,14 @@ module bin2ohot #(
     output  logic [(1<<W) -1:0] ohot
 );
 
-generate
-    if (W < 1) begin : g_param_check
-        $error("bin2ohot: W must be >= 1");
-    end
-endgenerate
-
 always_comb begin
     ohot      = '0;
     ohot[bin] = 1'b1;
 end
+
+`ifdef SVA_ON
+`include "bin2ohot.sva"
+`endif
 
 endmodule
 

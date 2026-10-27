@@ -21,7 +21,7 @@
 ## 4. 参数表
 | 参数 | 类型 | 默认值 | 合法范围 | 说明 |
 |---|---|---|---|---|
-| `N` | `int` | `4` | `N >= 1` | 单周期输入对应的输出高电平周期数；`N<1` 在 elaboration 阶段由 generate `$error` 报错 |
+| `N` | `int` | `4` | `N >= 1` | 单周期输入对应的输出高电平周期数；`N<1` 由 `pulse_stretch.sva` 的参数检查报错 |
 
 ## 5. 使用说明
 - **时钟/复位/初始化**：`cnt` 由 `dffr` 实现，异步复位值为 0；复位释放由 `rst_sync` 保证。
@@ -50,6 +50,6 @@ pulse_stretch #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED，对齐后复跑） |
 | 定向 TB | `tb/basic/pulse_stretch_tb.sv` PASS（`N=2`/`N=1`、超长输入、背靠背脉冲） |
-| SVA | 不需要（简单计数逻辑） |
-| 仿真器 | iverilog 12.0（环境未安装 verilator） |
+| SVA | `pulse_stretch.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
 | 未覆盖项 | 未覆盖 `N>2`、随机脉宽和 `N<1` 非法参数报错路径 |

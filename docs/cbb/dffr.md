@@ -54,5 +54,5 @@ dffr #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/basic/dffr_tb.sv` PASS（非零复位值、异步立即复位、`en=0` 保持、`en=1` 更新） |
 | SVA | 不需要（单级寄存器） |
-| 仿真器 | iverilog 12.0 |
-| 未覆盖项 | `W=1` 未单独跑；复位释放亚稳态由 `rst_sync` 覆盖，本模块不建模；未跑 verilator lint / 形式化 |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
+| 未覆盖项 | `W=1` 未单独跑；复位释放亚稳态由 `rst_sync` 覆盖，本模块不建模；verilator 5.020 编译/仿真通过；未做形式化 |

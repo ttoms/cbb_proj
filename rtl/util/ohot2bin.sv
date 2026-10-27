@@ -21,12 +21,6 @@ module ohot2bin #(
 
 localparam int OUT_W = (IN_W > 1) ? $clog2(IN_W) : 1;
 
-generate
-    if (IN_W < 1) begin : g_param_check
-        $error("ohot2bin: IN_W must be >= 1");
-    end
-endgenerate
-
 always_comb begin
     bin = '0;
     vld = 1'b0;
@@ -37,6 +31,10 @@ always_comb begin
         end
     end
 end
+
+`ifdef SVA_ON
+`include "ohot2bin.sva"
+`endif
 
 endmodule
 

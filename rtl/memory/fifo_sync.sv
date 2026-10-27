@@ -54,12 +54,6 @@ assign nxt_wr_ptr   = wr_ptr + 1'b1;
 assign nxt_rd_ptr   = rd_ptr + 1'b1;
 assign entry_vld_en = wr_en | rd_en;
 
-generate
-    if (DEPTH < 2 || ((DEPTH & (DEPTH - 1)) != 0)) begin : g_param_check
-        $error("fifo_sync: DEPTH must be a power of two and >= 2");
-    end
-endgenerate
-
 always_comb begin
     nxt_entry_vld = entry_vld;
     if (rd_en) begin

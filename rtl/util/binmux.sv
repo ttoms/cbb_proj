@@ -21,12 +21,6 @@ module binmux #(
     output  logic                                       vld
 );
 
-generate
-    if (N < 1 || W < 1) begin : g_param_check
-        $error("binmux: N and W must be >= 1");
-    end
-endgenerate
-
 always_comb begin
     data_out = '0;
     vld      = 1'b0;
@@ -35,6 +29,10 @@ always_comb begin
         vld      = 1'b1;
     end
 end
+
+`ifdef SVA_ON
+`include "binmux.sva"
+`endif
 
 endmodule
 

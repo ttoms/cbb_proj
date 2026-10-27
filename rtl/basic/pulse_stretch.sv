@@ -30,12 +30,6 @@ logic [CNT_W -1:0]  nxt_cnt ;
 logic               cnt_en  ;
 logic               active  ;
 
-generate
-    if (N < 1) begin : g_param_check
-        $error("pulse_stretch: N must be >= 1");
-    end
-endgenerate
-
 assign active    = in_pulse | (cnt != '0);
 assign out_pulse = active;
 assign cnt_en    = active;
@@ -59,6 +53,10 @@ dffr #(
     .d      (nxt_cnt    ),
     .q      (cnt        )
 );
+
+`ifdef SVA_ON
+`include "pulse_stretch.sva"
+`endif
 
 endmodule
 

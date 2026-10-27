@@ -28,12 +28,6 @@ logic [STAGES_USE-1:0] nxt_rst_sync_ff;
 
 assign nxt_rst_sync_ff = {rst_sync_ff[STAGES_USE-2:0], 1'b1};
 
-generate
-    if (STAGES < STAGES_MIN) begin : g_param_check
-        $error("rst_sync: STAGES must be >= 2");
-    end
-endgenerate
-
 dffr #(
     .W          (STAGES_USE ),
     .RESET_VAL  ('0         )

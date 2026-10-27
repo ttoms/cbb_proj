@@ -44,6 +44,6 @@ bin2ohot #(
 |---|---|
 | `quality_gate.py` | 0 error（PASSED） |
 | 定向 TB | `tb/util/bin2ohot_tb.sv` PASS（W=4，遍历全部 16 个输入值，`$countones(ohot)==1`） |
-| SVA | 不需要（纯组合） |
-| 仿真器 | iverilog 12.0（`-g2012`，未定义 `SVA_ON`） |
+| SVA | `bin2ohot.sva` 参数检查 PASS（verilator 5.020，`--assert -DSVA_ON`） |
+| 仿真器 | iverilog 12.0 + verilator 5.020 |
 | 未覆盖项 | 未做 `W=1` / `W>4` 参数实例仿真；未做综合面积与时序评估 |

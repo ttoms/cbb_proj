@@ -19,12 +19,6 @@ module arbiter_pri #(
     output  logic           gnt_vld
 );
 
-generate
-    if (N < 1) begin : g_param_check
-        $error("arbiter_pri: N must be >= 1");
-    end
-endgenerate
-
 always_comb begin
     gnt     = '0;
     gnt_vld = 1'b0;
@@ -35,6 +29,10 @@ always_comb begin
         end
     end
 end
+
+`ifdef SVA_ON
+`include "arbiter_pri.sva"
+`endif
 
 endmodule
 
