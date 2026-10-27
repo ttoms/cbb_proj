@@ -13,42 +13,42 @@
 | P2 数据通路、接口与保序 | 11 | 同步 FIFO 增强、位宽转换、CRC/编码、接口适配、流整形、链表/ID 池 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
 | P4 CDC（最低优先级，无需求不启动） | 5 | 单时钟项目，CDC 同步/异步 FIFO 无需求不启动 |
-| **合计** | **50** | 5 项模板已有，45 项待实施（其中 29 项复杂件先架构） |
+| **合计** | **50** | 14 项已发布（首批），1 项模板已有，35 项待实施 |
 
 > `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §10。
 
-**首批迭代（P0 4 项 + P1 10 个简单件，共 14 项）**：先收编 4 个基础件，再完成 10 个简单件。
+**首批迭代（P0 4 项 + P1 10 个简单件，共 14 项，已完成）**：先收编 4 个基础件，再完成 10 个简单件。
 
 - 首批 P1 简单件：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`。
 - 第二批复杂件：`clkgate`、`arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` / `arbiter_wrapper`、`arbmux`、`strmux`、`reg_slice`。
 - CDC 全部保持 P4，不进入首批；单时钟项目，无需求不启动。
 
-## 2. P0：基础件收编（模板已有，首批）
+## 2. P0：基础件收编（首批，已发布）
 
 | ID | 模块名 | 目录 | 功能 | 复杂度 | 依赖 | 状态 | 关键验收点 |
 |---|---|---|---|---|---|---|---|
-| CBB-BASIC-001 | `dff` | `rtl/basic` | 无复位数据通路寄存器，显式 `en` | 简单 | - | 模板已有 | 编译 + 自检 + 对齐；作为数据通路默认单元 |
-| CBB-BASIC-002 | `dffr` | `rtl/basic` | 异步复位控制寄存器，显式 `en` | 简单 | - | 模板已有 | 复位值常量、复位释放由 `rst_sync` 保证 |
-| CBB-BASIC-003 | `rst_sync` | `rtl/basic` | 异步复位、同步释放 | 简单 | - | 模板已有 | 复位释放无亚稳态；含参数检查 SVA |
-| CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready） | 复杂 | `dff` / `dffr` | 模板已有 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
+| CBB-BASIC-001 | `dff` | `rtl/basic` | 无复位数据通路寄存器，显式 `en` | 简单 | - | 已发布 | 编译 + 自检 + 对齐；作为数据通路默认单元 |
+| CBB-BASIC-002 | `dffr` | `rtl/basic` | 异步复位控制寄存器，显式 `en` | 简单 | - | 已发布 | 复位值常量、复位释放由 `rst_sync` 保证 |
+| CBB-BASIC-003 | `rst_sync` | `rtl/basic` | 异步复位、同步释放 | 简单 | `dffr` | 已发布 | 复位释放无亚稳态；含参数检查 SVA |
+| CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready） | 复杂 | `dff` / `dffr` | 已发布 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
 
-> 收编动作：实现开始时按简单/复杂件复制对应模板为 `docs/cbb/<module>.md`，补全端口/参数/使用说明（复杂件补齐微架构/数据流/状态机等章节），完成验收后更新本清单状态为“已发布”。`dff` 已提供示例文档：[`docs/cbb/dff.md`](cbb/dff.md)。
+> 收编动作：实现开始时按简单/复杂件复制对应模板为 `docs/cbb/<module>.md`，补全端口/参数/使用说明（复杂件补齐微架构/数据流/状态机等章节），完成验收后更新本清单状态为“已发布”。首批 14 项均已完成并发布。
 
 ## 3. P1：高频基础件（首批 10 + 二批 9）
 
 | ID | 模块名 | 目录 | 功能 | 复杂度 | 依赖 | 状态 | 批次 | 关键验收点 |
 |---|---|---|---|---|---|---|---|---|
-| CBB-BASIC-005 | `counter` | `rtl/basic` | 参数化上/下计数、load、饱和/回绕 | 简单 | `dffr` | 待开发 | 首批 | 位宽边界、回绕、`en` 条件、复位值 |
-| CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dff` | 待开发 | 首批 | 复位后无假脉冲；输入抖动场景 |
-| CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `counter` | 待开发 | 首批 | `N=1`、超长输入、背靠背脉冲 |
-| CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `counter` | 待开发 | 首批 | 抖动/稳定边界、复位释放 |
+| CBB-BASIC-005 | `counter` | `rtl/basic` | 参数化上/下计数、load、饱和/回绕 | 简单 | `dffr` | 已发布 | 首批 | 位宽边界、回绕、`en` 条件、复位值 |
+| CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dffr` | 已发布 | 首批 | 复位后无假脉冲；输入抖动场景 |
+| CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `dffr` | 已发布 | 首批 | `N=1`、超长输入、背靠背脉冲 |
+| CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `dffr` | 已发布 | 首批 | 抖动/稳定边界、复位释放 |
 | CBB-BASIC-009 | `clkgate` | `rtl/basic` | 自动时钟门控，根据 `wakeup` / `idle` 自动开关时钟，内部调用 `icg` | 复杂 | `icg` | 待架构 | 二批 | wakeup 唤醒、idle 判定、自动开关钟、无毛刺、复位 |
-| CBB-BASIC-010 | `icg` | `rtl/basic` | latch 型标准单元 ICG 行为模型/包装 | 简单 | - | 待开发 | 首批 | latch 透明/锁存、enable 时序、`// gate: allow-latch` 豁免、仿真与综合替换一致 |
-| CBB-UTIL-005 | `bin2ohot` | `rtl/util` | 二进制 → 独热转换 | 简单 | - | 待开发 | 首批 | 全零、最大索引、位宽边界、输出仅一位有效 |
-| CBB-UTIL-006 | `ohot2bin` | `rtl/util` | 独热 → 二进制转换 | 简单 | - | 待开发 | 首批 | 单热、全零、多热行为、位宽边界 |
-| CBB-UTIL-007 | `busmux` | `rtl/util` | 独热选择信号的数据 mux | 简单 | - | 待开发 | 首批 | 单热、无选择、多热行为、数据位宽 |
-| CBB-UTIL-008 | `binmux` | `rtl/util` | 二进制选择信号的数据 mux | 简单 | - | 待开发 | 首批 | 选择越界、无选择、位宽、组合延迟 |
-| CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 待开发 | 首批 | 无请求、全请求、优先级语义明确 |
+| CBB-BASIC-010 | `icg` | `rtl/basic` | latch 型标准单元 ICG 行为模型/包装 | 简单 | - | 已发布 | 首批 | latch 透明/锁存、enable 时序、`// gate: allow-latch` 豁免、仿真与综合替换一致 |
+| CBB-UTIL-005 | `bin2ohot` | `rtl/util` | 二进制 → 独热转换 | 简单 | - | 已发布 | 首批 | 全零、最大索引、位宽边界、输出仅一位有效 |
+| CBB-UTIL-006 | `ohot2bin` | `rtl/util` | 独热 → 二进制转换 | 简单 | - | 已发布 | 首批 | 单热、全零、多热行为、位宽边界 |
+| CBB-UTIL-007 | `busmux` | `rtl/util` | 独热选择信号的数据 mux | 简单 | - | 已发布 | 首批 | 单热、无选择、多热行为、数据位宽 |
+| CBB-UTIL-008 | `binmux` | `rtl/util` | 二进制选择信号的数据 mux | 简单 | - | 已发布 | 首批 | 选择越界、无选择、位宽、组合延迟 |
+| CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 已发布 | 首批 | 无请求、全请求、优先级语义明确 |
 | CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | 指针回绕、单请求、全请求、公平性 |
 | CBB-ARB-003 | `arbiter_wrr` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | 权重边界、零权重、公平带宽、无饿死 |
 | CBB-ARB-004 | `arbiter_lru` | `rtl/arbiter` | 最近最少使用仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | 历史更新、连续请求、无饿死、复位 |
