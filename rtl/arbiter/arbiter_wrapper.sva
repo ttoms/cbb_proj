@@ -1,0 +1,36 @@
+// arbiter_wrapper 断言与参数检查（由 SVA_ON 控制 include）
+
+initial begin
+    if (N < 1) begin
+        $fatal(1, "[%m] N must be >= 1, got %0d", N);
+    end
+    if (WEIGHT_W < 1) begin
+        $fatal(1, "[%m] WEIGHT_W must be >= 1, got %0d", WEIGHT_W);
+    end
+    if (QOS_W < 1) begin
+        $fatal(1, "[%m] QOS_W must be >= 1, got %0d", QOS_W);
+    end
+    if (ARB_TYPE > ARB_QRR) begin
+        $fatal(1, "[%m] illegal ARB_TYPE %b, must be 000~100", ARB_TYPE);
+    end
+end
+
+// 授权至多一路
+a_gnt_onehot: assert property (
+    @(posedge clk) disable iff (!rst_n) gnt_vld |-> $onehot(gnt)
+);
+
+// 授权只能落在请求位图上
+a_gnt_subset: assert property (
+    @(posedge clk) disable iff (!rst_n) ((gnt & ~req) == '0)
+);
+
+// 有授权必为实际请求，不制造假 valid
+a_gnt_vld_req: assert property (
+    @(posedge clk) disable iff (!rst_n) gnt_vld |-> (|req)
+);
+
+// 无请求时不得授权
+a_no_gnt_no_req: assert property (
+    @(posedge clk) disable iff (!rst_n) !(|req) |-> !gnt_vld
+);
