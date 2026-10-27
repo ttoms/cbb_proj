@@ -9,12 +9,14 @@
 | 阶段 | 数量 | 说明 |
 |---|---:|---|
 | P0 基础件收编 | 5 | 来自 my_env 模板，补验收与目录收编 |
-| P1 高频基础件 | 8 | 计数器、边沿/脉冲、仲裁、流控 |
+| P1 高频基础件 | 10 | 计数器、边沿/脉冲、仲裁家族、可配置 register slice |
 | P2 数据通路与 CDC | 10 | CDC 同步、异步 FIFO、位宽转换、CRC/编码 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
-| **合计** | **34** | 5 项模板已有，29 项待开发（其中 17 项需先详细设计） |
+| **合计** | **36** | 5 项模板已有，31 项待开发（其中 20 项需先详细设计） |
 
-**建议首批迭代（P0 + P1，共 13 项）**：先收编 5 个基础件，再完成 8 个高频件，形成后续 CDC / FIFO / 总线开发的依赖底座。
+> `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §9。
+
+**建议首批迭代（P0 + P1，共 15 项）**：先收编 5 个基础件，再完成 10 个高频件，形成后续 CDC / FIFO / 总线开发的依赖底座。
 
 ## 2. P0：基础件收编（模板已有）
 
@@ -36,10 +38,12 @@
 | CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dff` | 待开发 | 复位后无假脉冲；输入抖动场景 |
 | CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `counter` | 待开发 | `N=1`、超长输入、背靠背脉冲 |
 | CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `counter` | 待开发 | 抖动/稳定边界、复位释放 |
-| CBB-ARB-001 | `pri_arbiter` | `rtl/arbiter` | 固定优先级仲裁 | 简单 | - | 待开发 | 无请求、全请求、优先级语义明确 |
-| CBB-ARB-002 | `rr_arbiter` | `rtl/arbiter` | 轮询仲裁 | 复杂 | `dffr` | 待架构 | 指针回绕、单请求、全请求、公平性 |
-| CBB-STREAM-001 | `skid_buffer` | `rtl/stream` | valid-ready 防反压缓冲 | 复杂 | `dff` / `dffr` | 待架构 | 满时反压、无数据丢失/重复、背靠背 |
-| CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 流水线寄存器切片 | 简单 | `dff` | 待开发 | 直通/打拍模式、时序打断 |
+| CBB-ARB-001 | `pri_arbiter` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 待开发 | 无请求、全请求、优先级语义明确 |
+| CBB-ARB-002 | `rr_arbiter` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 指针回绕、单请求、全请求、公平性 |
+| CBB-ARB-003 | `wrr_arbiter` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 待架构 | 权重边界、零权重、公平带宽、无饿死 |
+| CBB-ARB-004 | `lru_arbiter` | `rtl/arbiter` | 最近最少使用仲裁核 | 复杂 | `dffr` | 待架构 | 历史更新、连续请求、无饿死、复位 |
+| CBB-ARB-005 | `arbiter_wrap` | `rtl/arbiter` | 仲裁器统一封装，`ARB_TYPE` 选择仲裁核 | 复杂 | `pri_arbiter` / `rr_arbiter` / `wrr_arbiter` / `lru_arbiter` | 待架构 | 四种 `ARB_TYPE` 分支、统一端口、非法类型报错 |
+| CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 可配置 valid-ready 打拍切片，`RS_MODE` 选择 bypass/forward/backward/full | 复杂 | `dff` / `dffr` | 待架构 | 四种模式、反压不丢数/不重复、吞吐与延迟、模式参数非法值 |
 
 ## 4. P2：数据通路与 CDC
 
@@ -50,7 +54,7 @@
 | CBB-CDC-003 | `cdc_handshake` | `rtl/cdc` | 多 bit req/ack 握手同步 | 复杂 | `cdc_2ff` | 待架构 | 背靠背、复位边界、吞吐说明 |
 | CBB-CDC-004 | `fifo_async` | `rtl/cdc` | 异步 FIFO（格雷码指针） | 复杂 | `cdc_2ff` / `gray_conv` / `dff` / `dffr` | 待架构 | 满/空、指针同步、复位、跨域同时读写 |
 | CBB-MEM-002 | `fifo_sync_af` | `rtl/memory` | 同步 FIFO + almost_full/empty | 复杂 | `fifo_sync` | 待开发 | 阈值边界、阈值参数校验、组合/寄存输出 |
-| CBB-STREAM-003 | `width_conv` | `rtl/stream` | 位宽转换（窄↔宽） | 复杂 | `fifo_sync` / `skid_buffer` | 待架构 | 非整数倍、尾包、背靠背 |
+| CBB-STREAM-003 | `width_conv` | `rtl/stream` | 位宽转换（窄↔宽） | 复杂 | `fifo_sync` / `reg_slice` | 待架构 | 非整数倍、尾包、背靠背 |
 | CBB-UTIL-001 | `crc` | `rtl/util` | 参数化 CRC 生成/校验 | 复杂 | `dff` | 待开发 | 标准多项式、位序、初值/异或、逐位/并行 |
 | CBB-UTIL-002 | `onehot_pri_enc` | `rtl/util` | 独热/优先编码器 | 简单 | - | 待开发 | 全零、多热、位宽边界 |
 | CBB-UTIL-003 | `gray_conv` | `rtl/util` | 二进制 ↔ 格雷码转换 | 简单 | - | 待开发 | 位宽边界、往返一致 |
@@ -72,16 +76,59 @@
 | CBB-IO-007 | `i2c_master` | `rtl/io` | I2C 主机 | 复杂 | `counter` | 待架构 | 起始/停止、ACK/NACK、时钟拉伸 |
 | CBB-IO-008 | `pwm` | `rtl/io` | PWM 生成 | 简单 | `counter` | 待开发 | 占空比 0%/100%、周期边界 |
 
-## 6. 依赖关系速览
+## 6. 关键设计约束
+
+### 6.1 `reg_slice`：用 `RS_MODE` 统一 vld/rdy 打拍
+
+`reg_slice` 是可配置切片；`skid_buffer` 不再单独实现，作为 `RS_MODE=RS_BACKWARD` 的预设用法。
+
+| `RS_MODE` | 编码 | vld/data 前向路径 | rdy 反向路径 | 延迟 | 说明 |
+|---|---:|---|---|---|---|
+| `RS_BYPASS` | `2'b00` | 组合直通 | 组合直通 | 0 拍 | 不打断时序，面积最小 |
+| `RS_FORWARD` | `2'b01` | 打拍 | 组合直通 | 1 拍 | 只切前向路径 |
+| `RS_BACKWARD` | `2'b10` | 组合直通 + skid 表项 | 打拍 | 稳态 0 拍，反压吸收 1 拍 | 只切反向路径；即 `skid_buffer` |
+| `RS_FULL` | `2'b11` | 打拍 | 打拍 | 1 拍 | 双向切断；内部需 skid/双表项保持吞吐 |
+
+- `RS_MODE` 为 2 bit 参数，默认 `RS_FULL`。
+- 目标吞吐均为 1 项/拍（反压时 0）；所有模式必须不丢数、不重复、不制造假 valid。
+- `RS_BACKWARD` / `RS_FULL` 内含 skid 存储，反压时先吸收当前数据再拉低上游 `rdy`。
+- `RS_BYPASS` 仅用于时序允许的场景，不能作为默认。
+- 非法编码在 elaboration 阶段报错。
+
+### 6.2 仲裁器家族与 `arbiter_wrap`
+
+仲裁核保持独立、单一职责；`arbiter_wrap` 只做参数选择和端口统一，不复制仲裁算法。
+
+| `ARB_TYPE` | 编码 | 仲裁核 | 语义 |
+|---|---:|---|---|
+| `ARB_FIXED` | `2'b00` | `pri_arbiter` | 固定优先级，索引小者优先 |
+| `ARB_RR` | `2'b01` | `rr_arbiter` | 轮询，保证长期公平 |
+| `ARB_WRR` | `2'b10` | `wrr_arbiter` | 加权轮询，按 `weight` 分配带宽 |
+| `ARB_LRU` | `2'b11` | `lru_arbiter` | 最近最少使用优先，降低饿死风险 |
+
+统一接口：
+
+- `req[N-1:0]`、`gnt[N-1:0]` 独热，`gnt_vld = |gnt`。
+- `weight[N*WEIGHT_W-1:0]` 仅 `ARB_WRR` 使用，其余类型忽略。
+- `ARB_TYPE` 是 elaboration 参数，不是运行期切换；`generate case` 只综合选中的仲裁核。
+- `wrr_arbiter` 的 `weight=0` 视为不参与仲裁；全零时 `gnt_vld=0`。
+- `N=1`、`req=0`、全请求、背靠背授予、非法 `ARB_TYPE` 均需覆盖。
+
+## 7. 依赖关系速览
 
 ```text
 dff / dffr ──┬── counter ──┬── pulse_stretch
              │             ├── debounce
              │             ├── timer ── watchdog
              │             └── uart_tx / uart_rx / pwm
-             ├── reg_slice / skid_buffer
+             ├── reg_slice（RS_BACKWARD 即 skid_buffer）
              ├── fifo_sync ── fifo_sync_af / width_conv
-             └── rr_arbiter / pri_arbiter
+             └── pri_arbiter / rr_arbiter / wrr_arbiter / lru_arbiter
+
+pri_arbiter ─┐
+rr_arbiter ──┼── arbiter_wrap
+wrr_arbiter ─┤
+lru_arbiter ─┘
 
 rst_sync ── 所有时序模块的复位释放
 
@@ -93,7 +140,7 @@ cdc_2ff ──┬── cdc_pulse
 apb_slave / axil_reg_if ── axil2apb
 ```
 
-## 7. 通用验收基线
+## 8. 通用验收基线
 
 每个 CBB 发布前至少满足：
 
@@ -106,7 +153,13 @@ apb_slave / axil_reg_if ── axil2apb
 7. 已执行 `align.sh`，代码无对齐标记。
 8. 本清单中的状态、依赖、备注已更新。
 
-## 8. 暂不纳入首版
+## 9. 已合并 / 已废弃
+
+| ID | 模块名 | 状态 | 说明 |
+|---|---|---|---|
+| CBB-STREAM-001 | `skid_buffer` | 已合并 | 功能由 `reg_slice` 的 `RS_MODE=RS_BACKWARD` 覆盖，不单独开发 RTL；保留 ID 仅用于追溯 |
+
+## 10. 暂不纳入首版
 
 - 商用 IP 级验证产物：覆盖率报告、回归列表、随机种子管理、形式化。
 - 工艺库相关的 SRAM/DFT/BIST 包装（等工艺确定后单独立项）。

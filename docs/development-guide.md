@@ -36,7 +36,7 @@ cbb_proj/
 | `rtl/cdc` | 跨时钟域同步、异步 FIFO |
 | `rtl/memory` | 同步 FIFO、RAM/ROM 包装 |
 | `rtl/stream` | valid-ready 流控、流水线、位宽转换 |
-| `rtl/arbiter` | 轮询 / 固定优先级仲裁 |
+| `rtl/arbiter` | 固定优先级 / RR / WRR / LRU 仲裁核及 `arbiter_wrap` 统一封装 |
 | `rtl/bus` | APB / AXI-Lite 等总线粘合逻辑 |
 | `rtl/io` | UART / SPI / I2C / Timer / IRQ 等外设 |
 | `rtl/util` | CRC、格雷码、编码器等通用组合/时序工具 |
