@@ -48,5 +48,5 @@ ohot_pri_enc #(
 | `quality_gate.py` | 0 error（PASSED）；对齐后复跑 |
 | 定向 TB | `tb/util/ohot_pri_enc_tb.sv` PASS（IN_W=4：全零、单请求、多热取最低、全热；IN_W=1 下界；IN_W=8 上界与多热） |
 | SVA | `ohot_pri_enc.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 通过；Verilator 5.020 `--lint-only -Wall` 无告警 |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无告警 |
 | 未覆盖项 | 未覆盖 `IN_W` 非 2 的幂；未做综合面积与时序评估 |

@@ -68,7 +68,7 @@ arbiter_lru #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/arbiter/arbiter_lru_tb.sv` PASS：`N=1/2/4` 各跑 200 拍随机 scoreboard（年龄模型逐拍比对）、全请求序列、LRU 偏好（刚授权者最后选中）、无请求保持 |
 | SVA | `arbiter_lru.sva`：参数检查、`gnt` 独热、`gnt_vld == OR(req)`、授权属于请求、无授权时年龄保持；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 未覆盖项 | `N > 8`、年龄饱和后的并列行为长时间压力、`req` 为 X/Z、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]

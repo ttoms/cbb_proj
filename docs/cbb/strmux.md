@@ -7,7 +7,7 @@
 | 模块名 | `strmux` |
 | 类别 | `arbiter` |
 | 状态 | 已发布 |
-| 版本 | `v0.1.0` |
+| 版本 | `v0.1.1` |
 | 维护人 | - |
 | 更新时间 | 2026-10-27 |
 
@@ -54,6 +54,7 @@ valid-ready 语义：`out_vld` 与 `out_hop` / `out_top` / `out_pld` 同拍有�
 - **反压/握手**：`out_vld && !out_rdy` 时锁存当前选通结果，`out_hop` / `out_top` / `out_pld` 保持稳定；源端必须按 valid-ready 规则保持 `in_vld`、`in_hop`、`in_top`、`in_pld` 直到 `in_rdy` 拉高。
 - **粒度选择**：`GRAN=0` 每个 flit 可切换通道；`GRAN=1` 在 packet 头 flit（`hop=1 && top=0`）锁定，直到尾 flit（`top=1`）握手后释放，packet 内（含 `vld` 间隙）不切换。
 - **仲裁类型**：`ARB_TYPE` 为 elaboration 参数，只综合选中的仲裁核；`weight` / `qos` 仅对应类型生效。
+- **锁定期间的仲裁推进**：`GRAN=1` 锁定不冻结 `arbiter_wrapper`，其指针/credit/age 仍按拍推进且授权被忽略；数据通路不受影响，但 packet 级记账不精确，详见 §7 与 §9。
 
 ```systemverilog
 strmux #(
@@ -89,17 +90,17 @@ strmux #(
 - packet 必须成对：`hop=1` 起始、`top=1` 结束，且同一 packet 的 flit 连续来自同一通道；模块不做 packet 合法性检查。
 - `GRAN=1` 锁定期间不响应其他通道；被锁通道违约（中途撤销 `vld` 或不给 `top`）会长期占用输出，直到复位。
 - 单 flit packet（`hop=1 && top=1`）不进入锁定态，按普通 flit 处理，不占用锁存。
-- 反压期间仲裁核仍会推进内部指针/credit，长反压后首次授权分布可能偏移。
+- 仲裁器不会因反压或 packet 锁定而冻结：`in_vld` 始终直接送入 `arbiter_wrapper`。`GRAN=1` 锁定期间其他通道的 `gnt`/`gnt_vld` 仍会产生并被 mux 忽略，RR 指针、WRR credit、LRU age、QRR 轮询点都会继续推进。对 RR/QRR 只影响释放后的起点；对 WRR 会按 flit 扣减 credit，长 packet 后可能出现补偿性偏差，“每个 packet 只计一次仲裁”的直觉不成立。这是有意取舍，详见 §9 关键设计决策。
 - 不缓存整包，`GRAN=1` 只锁选通，不锁数据；源端必须保持 packet 内 flit 的连续性责任。
 - `ARB_TYPE` 不可运行期切换；切换需重新例化。
 
 ## 8. 验证状态 [M]
 | 项 | 结果 |
 |---|---|
-| `quality_gate.py` | PASS（0 error，0 warning，16 项检查；对齐后复跑） |
+| `quality_gate.py` | PASS（0 error，0 warning；对齐后复跑） |
 | 定向 TB | `tb/arbiter/strmux_tb.sv` PASS：`FIXED+FLIT`、`RR+FLIT`、`FIXED+PKT`、`RR+PKT`、`WRR+PKT weight=8'h83`、`LRU+PKT`、`QRR+PKT qos=8'h2B`、`N=1+PKT` 共 8 组；每组 300 拍随机 packet 流量（`MAX_PKT=4`，packet 内注入 `vld` 间隙）+ 全通道反压 + 无请求场景，逐 flit scoreboard 校验 `pld`/`hop`/`top`，并检查 packet 内不换通道、packet 头不嵌套 |
 | SVA | `strmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、反压期间 `out_vld`/`out_hop`/`out_top`/`out_pld` 稳定、输出三字段与被选中通道一致；`GRAN=1` 追加头 flit 锁定、packet 内保持、尾 flit 释放三条 packet 断言；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
 | 未覆盖项 | `N > 8`、`GRAN=0` 下的 WRR/LRU/QRR 组合、`PLD_W=1`、`in_*` 为 X/Z、源端违反 valid-ready 或 packet 违约的非法输入、超长反压后的公平性偏移量化、门级/综合时序与面积、形式化验证 |
 
 说明：TB 与 `arbmux_tb` 保持同一范式，直接用 packed 切片（`in_pld[i*PLD_W +: PLD_W]`）驱动负载，不经过 unpacked 数组 + `generate assign` 汇聚，以避免 Verilator 运行期不重新触发该连续赋值的限制。
@@ -134,7 +135,7 @@ strmux #(
 ```
 
 - **数据流**：
-  - 请求分发：`in_vld` 直接作为仲裁请求进入 `U_ARB`，不因反压而屏蔽；`weight` / `qos` 透传。
+  - 请求分发：`in_vld` 直接作为仲裁请求进入 `U_ARB`，不因反压或 `GRAN=1` 锁定而屏蔽；`weight` / `qos` 透传。
   - 选择：无锁存时用 `gnt`；有锁存时用 `hold_oh`，忽略仲裁核当拍授权。
   - 输出有效：无锁存时等价于 `gnt_vld`；有锁存时要求被锁存通道的 `in_vld` 仍有效（`GRAN=1` 的 packet 内间隙因此表现为 `out_vld=0`，但锁存保持）。
   - 反压：`in_rdy` 只在 `out_vld & out_rdy` 的握手拍对 `sel_oh` 置位，未选中通道恒为 0。
@@ -151,6 +152,8 @@ strmux #(
   - `set_pkt` 与 `set_bp` 或运算：头 flit 被反压时也锁存，行为与 packet 锁定一致，避免同一 packet 头被两套机制重复处理。
   - 头尾同拍（单 flit packet）不锁，避免为只含一个 flit 的 packet 引入无意义锁存。
   - `hold_clr` 优先于 `hold_set`，避免释放拍与新锁定同拍时旧锁存残留。
+  - **锁定期间不冻结仲裁器**：为保持选择路径简单、避免额外的请求门控组合逻辑与验证维度，锁存期间 `in_vld` 仍原样送入 `arbiter_wrapper`，其授权被 `hold_oh` 旁路。代价是 RR 指针、WRR credit、LRU age、QRR 轮询点按拍推进：RR/QRR 只影响释放后的起点；WRR 按 flit 而非 packet 扣减 credit，长 packet 后可能出现补偿性偏差，`GRAN=1` 下“每个 packet 只计一次仲裁”不成立。
+  - 若后续需要严格的 packet 级记账，可选两种改法：锁定期间把 `U_ARB` 的 `req` 屏蔽为 0（完全冻结），或只把被锁通道的 `in_vld` 送入 `U_ARB`（按 flit 计费、排除其它通道）。两者都会改变释放后的授权分布，需要重新跑公平性与 `a_pkt_*` 断言。
 
 ## 10. 状态机 [C]
 本模块为两状态控制（`hold_vld` 由 `hold_oh` 归约得到），`GRAN` 只改变进入/退出条件：
@@ -185,12 +188,13 @@ strmux #(
 
 - **关键路径/流水线**：`in_vld → arbiter_wrapper（组合仲裁）→ sel_oh → out_vld/out_hop/out_top/in_rdy/out_pld`。无反压时单级组合；反压/packet 锁定后经 `hold_oh` 旁路仲裁核。
 - **反压路径**：`out_rdy → in_rdy` 为组合；`out_rdy` 只影响 `U_HOLD` 的 en/d，不组合回灌仲裁核。
-- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热 mux + 2 位 hop/top 独热 mux + `in_rdy` 与门；相对 `arbmux` 只多 `hop` / `top` 两路归约与 mux。无额外 flit 存储。反压期间仲裁核仍在翻转。
-- **取舍**：选择“只锁选通、不锁数据”，面积最小；代价是要求源端严格遵守 valid-ready 与 packet 连续性，且仲裁核在反压期间持续推进。
+- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热 mux + 2 位 hop/top 独热 mux + `in_rdy` 与门；相对 `arbmux` 只多 `hop` / `top` 两路归约与 mux。无额外 flit 存储。反压与 packet 锁定期间仲裁核仍在翻转。
+- **取舍**：选择“只锁选通、不锁数据、不冻结仲裁”，面积与控制路径最简；代价是要求源端严格遵守 valid-ready 与 packet 连续性，且仲裁核的指针/credit/age/轮询点在反压与 packet 锁定期间持续推进，packet 级仲裁记账不精确。
 
 ## 12. 风险与未覆盖项 [C]
 - **风险**：源端违反 valid-ready（反压期间撤销 `in_vld` 或改 `in_*`）会导致丢数或字段错配，模块内无检测。
 - **风险**：`GRAN=1` 下 packet 中途断流且不给 `top`，锁存无法释放，输出长期被占用。
+- **风险**：`GRAN=1` 锁定期间仲裁核不冻结，RR/WRR/LRU/QRR 的内部状态按拍推进且授权被忽略；WRR 按 flit 扣减 credit，长 packet 后 packet 间权重记账可能出现补偿性偏差。数据不丢不重，但“每 packet 一次仲裁”的语义不成立，上层若依赖精确加权需评估或改用冻结/门控方案。
 - **风险**：长反压后仲裁核状态已推进，释放后的授权分布与“冻结仲裁”方案不同。
 - **限制**：单时钟；不做 packet 合法性检查；`ARB_TYPE` 不可运行期切换；未选中通道在锁定期间拿不到 `in_rdy`。
 - **未覆盖项**：`N > 8`、`GRAN=0` 下的 WRR/LRU/QRR、`PLD_W=1`、`in_*` 为 X/Z、非法源端时序、超长反压公平性量化、门级仿真与综合时序/面积、形式化验证。
@@ -198,6 +202,7 @@ strmux #(
 ## 13. 版本记录 [M]
 | 版本 | 日期 | 变更 | 兼容性 |
 |---|---|---|---|
+| `v0.1.1` | 2026-10-27 | 补充 `GRAN=1` 锁定期间仲裁器不冻结的取舍说明；统一仿真器声明 | 兼容 |
 | `v0.1.0` | 2026-10-27 | 初版：stream 级选通 + 反压锁存 + `GRAN` flit/packet 粒度 | - |
 
 ## 14. 相关文档 [O]

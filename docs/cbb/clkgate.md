@@ -72,7 +72,7 @@ clkgate #(
 | `quality_gate.py` | PASS（0 error，0 warning） |
 | 定向 TB | `tb/basic/clkgate_tb.sv` PASS：`IDLE_CYCLES=1/4/8` 三组，覆盖复位默认开钟、连续空闲关钟、关钟期间无时钟沿、`wakeup` 唤醒、短空闲窗口不关钟、`idle` 撤销保持开钟、`gclk` 无毛刺 |
 | SVA | `clkgate.sva`：`IDLE_CYCLES >= 1` 参数检查、复位期间 `active=1`、`wakeup` 后开钟、非空闲保持开钟；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
 | 未覆盖项 | `IDLE_CYCLES > 16`、`wakeup/idle` 为 X/Z、跨时钟域唤醒（需外部同步）、门级 ICG 单元替换与功耗收益、形式化验证 |
 
 ## 9. 微架构与数据流 [C]

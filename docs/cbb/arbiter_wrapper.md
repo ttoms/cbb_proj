@@ -88,7 +88,7 @@ arbiter_wrapper #(
 | `quality_gate.py` | PASS（0 error，0 warning） |
 | 定向 TB | `tb/arbiter/arbiter_wrapper_tb.sv` PASS：`FIXED N=4/1`、`RR N=4/1`、`WRR N=4 weight={3,0,2,0}`、`LRU N=4`、`QRR N=4 qos={3,1,2,0}`、非法 `ARB_TYPE=3'b101` 共 8 组；每组 200 拍随机 + 全请求背靠背 + 无请求，逐拍与对应仲裁核参考输出比对 |
 | SVA | `arbiter_wrapper.sva`：参数检查（`N`/`WEIGHT_W`/`QOS_W`/`ARB_TYPE`）、`gnt` 独热、授权属于请求、有授权必为请求、无请求不得授权；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
 | 未覆盖项 | 非法 `ARB_TYPE` 仅在 iverilog（未开 `SVA_ON`）下验证锁零，开启 SVA 时按参数检查 `$fatal`；`N > 8`、`req` 为 X/Z、运行期更换类型（不支持）、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]

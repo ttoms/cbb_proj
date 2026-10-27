@@ -7,7 +7,7 @@
 | 模块名 | `arbmux` |
 | 类别 | `arbiter` |
 | 状态 | 已发布 |
-| 版本 | `v0.1.0` |
+| 版本 | `v0.1.1` |
 | 维护人 | - |
 | 更新时间 | 2026-10-27 |
 
@@ -85,10 +85,10 @@ arbmux #(
 ## 8. 验证状态 [M]
 | 项 | 结果 |
 |---|---|
-| `quality_gate.py` | PASS（0 error，0 warning，16 项检查；对齐后复跑） |
+| `quality_gate.py` | PASS（0 error，0 warning；对齐后复跑） |
 | 定向 TB | `tb/arbiter/arbmux_tb.sv` PASS：`FIXED N=4`、`RR N=4`、`WRR N=4 weight=8'h83`、`LRU N=4`、`QRR N=4 qos=8'h2B`、`RR N=1` 共 6 组；每组 200 拍随机流量 + 全通道反压保持/释放 + 无请求场景，逐拍 scoreboard 校验 |
 | SVA | `arbmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、反压期间 `out_vld`/`out_pld` 稳定、`out_pld` 与被选中通道一致；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
 | 未覆盖项 | packet 边界（不属于本模块）、`N > 8`、`in_vld`/`in_pld` 为 X/Z、源端违反 valid-ready 的非法输入、超长反压后的公平性偏移量化、门级/综合时序与面积、形式化验证 |
 
 说明：TB 直接用 packed 切片（`in_pld[i*PLD_W +: PLD_W]`）驱动负载，而不从 unpacked 数组经 `generate assign` 汇聚。原因是 Verilator 不会在运行期写 unpacked 数组元素后重新触发该连续赋值（iverilog 正常），会造成仅 Verilator 下的假失败。
@@ -174,6 +174,7 @@ arbmux #(
 ## 13. 版本记录 [M]
 | 版本 | 日期 | 变更 | 兼容性 |
 |---|---|---|---|
+| `v0.1.1` | 2026-10-27 | 统一仿真器声明与门控检查项措辞 | 兼容 |
 | `v0.1.0` | 2026-10-27 | 初版：flit 级选通 + 反压锁存选通通道 | - |
 
 ## 14. 相关文档 [O]

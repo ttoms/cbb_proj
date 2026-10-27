@@ -69,7 +69,7 @@ arbiter_rr #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/arbiter/arbiter_rr_tb.sv` PASS：`N=1/2/4` 各跑 200 拍随机 scoreboard、全请求轮询、单请求 + 指针推进、无请求保持 |
 | SVA | `arbiter_rr.sva`：参数检查、`gnt` 独热、`gnt_vld == OR(req)`、授权属于请求、无授权时 `ptr` 保持、授权后 `ptr` 推进；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 未覆盖项 | `N > 8` 的大位宽、`req` 为 X/Z 的行为、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]

@@ -85,7 +85,7 @@ reg_slice #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/stream/reg_slice_tb.sv` PASS：四种模式各跑延迟检查 + 400 拍随机 scoreboard + 排空；覆盖随机反压、同拍读写、skid 吸收 |
 | SVA | `reg_slice.sva` 参数检查（`W >= 1`）；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 未覆盖项 | `W > 8` 的位宽组合、`RS_MODE` 为 X/Z 的行为、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]

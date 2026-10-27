@@ -52,5 +52,5 @@ gray_conv #(
 | `quality_gate.py` | 0 error（PASSED）；对齐后复跑 |
 | 定向 TB | `tb/util/gray_conv_tb.sv` PASS（W=4 两方向全 16 值遍历 + 往返一致；W=1 边界） |
 | SVA | `gray_conv.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 通过；Verilator 5.020 `--lint-only -Wall` 无告警 |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无告警 |
 | 未覆盖项 | 未覆盖 `W > 8` 的时序/面积；未做综合评估 |

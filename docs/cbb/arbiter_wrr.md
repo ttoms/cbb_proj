@@ -74,7 +74,7 @@ arbiter_wrr #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/arbiter/arbiter_wrr_tb.sv` PASS：`N=1`、等权重 `{1,1,1,1}`、混合权重 `{3,1,0,2}`（含零权重）、全零权重四组，各跑 3 轮授权计数 + 200 拍随机不变量检查 |
 | SVA | `arbiter_wrr.sva`：参数检查、`gnt` 独热、`gnt_vld == OR(req_w)`、授权属于请求、无授权时 `ptr` 保持、授权后 `ptr` 推进、`credit <= weight`；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 未覆盖项 | `WEIGHT_W > 4` 的权重组合、运行期改权重、`req` 为 X/Z、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]

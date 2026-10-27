@@ -72,7 +72,7 @@ arbiter_qrr #(
 | `quality_gate.py` | PASS（0 error） |
 | 定向 TB | `tb/arbiter/arbiter_qrr_tb.sv` PASS：`N=1`、等 QoS `{1,1,1,1}`、混合 QoS `{3,1,2,0}`、双高 QoS `{2,0,2,0}` 四组，各跑 200 拍随机 scoreboard、最高 QoS 独占、低 QoS 回退、无请求 |
 | SVA | `arbiter_qrr.sva`：参数检查、`gnt` 独热、`gnt_vld == OR(req)`、授权属于请求、授权只落在最高 QoS 组；需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 仿真器 | iverilog 12.0 PASS；Verilator 5.020（`--assert -DSVA_ON`）PASS |
+| 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 未覆盖项 | `QOS_W > 3`、运行期改 QoS、`N > 8`、`req` 为 X/Z、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]
