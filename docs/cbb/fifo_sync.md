@@ -80,10 +80,10 @@ fifo_sync #(
 | 项 | 结果 |
 |---|---|
 | `quality_gate.py` | PASS（0 error） |
-| 定向 TB | `tb/memory/fifo_sync_tb.sv` PASS（`DEPTH=2`：满/空边界、满时写阻塞、指针回绕、写满后读空、同拍读写条目数不变、数据顺序） |
+| 定向 TB | `tb/memory/fifo_sync_tb.sv` PASS（`DEPTH=2`：满/空边界、满时写阻塞、指针回绕、写满后读空、同拍读写条目数不变、数据顺序）；随机 scoreboard TB 覆盖 `DEPTH=4/8`、`DATA_W=1/16`（本地，未入库） |
 | SVA | `fifo_sync.sva` 参数检查 + 3 条并发断言；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
-| 未覆盖项 | `DEPTH > 2` 随机压力、`DATA_W=1`、复位发生在传输中、非法 `DEPTH` 的参数检查未跑（仅验证合法参数路径）、`rd_data` 读 mux 时序、门级/综合面积 |
+| 未覆盖项 | 复位发生在传输中、非法 `DEPTH` 的参数检查未跑（仅验证合法参数路径）、`rd_data` 读 mux 时序、门级/综合面积 |
 
 ## 9. 微架构与数据流 [C]
 - **模块划分**：单模块，无子模块。内部例化 `U_WR_PTR` / `U_RD_PTR` / `U_ENTRY_VLD` 三个 `dffr`，以及 `gen_mem[i].U_MEM` 共 `DEPTH` 个无复位 `dff`。
@@ -136,7 +136,7 @@ fifo_sync #(
 ## 12. 风险与未覆盖项 [C]
 - **风险**：`full` 时同拍读不能补写，满边界存在吞吐气泡；`DEPTH` 较大时 `entry_vld` 归约和读 mux 延迟上升；`DEPTH` 参数非法时依赖 `fifo_sync.sva` 的参数检查，未定义 `SVA_ON` 时不会报错，需在集成时保证参数合法。
 - **限制**：2 的幂深度；单时钟；无几乎满/空标志；无 `count`；`mem` 不复位，依赖 `entry_vld` 保证不读出未写数据。
-- **未覆盖项**：`DEPTH > 2` 的随机压力与 scoreboard、`DATA_W=1` 边界、复位发生在读写传输中的行为、`rd_data` 读 mux 的时序/面积、门级仿真与综合结果。
+- **未覆盖项**：复位发生在读写传输中的行为、`rd_data` 读 mux 的时序/面积、门级仿真与综合结果。
 
 ## 13. 版本记录 [M]
 | 版本 | 日期 | 变更 | 兼容性 |
