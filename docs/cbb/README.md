@@ -55,16 +55,3 @@
 | 模块 | CBB ID | 文档 | 类型 |
 |---|---|---|---|
 | `dff` | CBB-BASIC-001 | [`dff.md`](dff.md) | 简单件范例 |
-| `dffr` | CBB-BASIC-002 | [`dffr.md`](dffr.md) | 简单件 |
-| `rst_sync` | CBB-BASIC-003 | [`rst_sync.md`](rst_sync.md) | 简单件 |
-| `fifo_sync` | CBB-MEM-001 | [`fifo_sync.md`](fifo_sync.md) | 复杂件范例 |
-| `counter` | CBB-BASIC-005 | [`counter.md`](counter.md) | 简单件 |
-| `edge_det` | CBB-BASIC-006 | [`edge_det.md`](edge_det.md) | 简单件 |
-| `pulse_stretch` | CBB-BASIC-007 | [`pulse_stretch.md`](pulse_stretch.md) | 简单件 |
-| `debounce` | CBB-BASIC-008 | [`debounce.md`](debounce.md) | 简单件 |
-| `icg` | CBB-BASIC-010 | [`icg.md`](icg.md) | 简单件 |
-| `bin2ohot` | CBB-UTIL-005 | [`bin2ohot.md`](bin2ohot.md) | 简单件 |
-| `ohot2bin` | CBB-UTIL-006 | [`ohot2bin.md`](ohot2bin.md) | 简单件 |
-| `busmux` | CBB-UTIL-007 | [`busmux.md`](busmux.md) | 简单件 |
-| `binmux` | CBB-UTIL-008 | [`binmux.md`](binmux.md) | 简单件 |
-| `arbiter_pri` | CBB-ARB-001 | [`arbiter_pri.md`](arbiter_pri.md) | 简单件 |

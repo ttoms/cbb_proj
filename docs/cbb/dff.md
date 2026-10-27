@@ -1,6 +1,6 @@
 # dff CBB 文档（简单件）
 ## 1. 基本信息
-`CBB-BASIC-001` · `dff` · `basic` · 已发布
+`CBB-BASIC-001` · `dff` · `basic` · 模板已有
 ## 2. 功能与范围
 - **功能**：带显式 `en` 的无复位数据通路寄存器。
 - **不包含**：不提供复位；不用于状态机、配置、计数器、指针、valid/ready 等控制类寄存器。
@@ -39,8 +39,8 @@ dff #(
 ## 7. 验证状态
 | 项 | 结果 |
 |---|---|
-| `quality_gate.py` | PASS |
-| 定向 TB | `tb/basic/dff_tb.sv` PASS |
+| `quality_gate.py` | PASS（在 my_env 模板上执行） |
+| 定向 TB | 未提供，收编时补 |
 | SVA | 不需要（简单单元） |
-| 仿真器 | iverilog 12.0 |
-| 未覆盖项 | 无复位上电值；异步复位释放不在本模块范围 |
+| 仿真器 | 当前环境未安装 iverilog / verilator，未跑仿真 |
+| 未覆盖项 | 收编后补最小定向 TB 与对齐检查 |
