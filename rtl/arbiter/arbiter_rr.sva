@@ -1,0 +1,34 @@
+// arbiter_rr 断言与参数检查（由 SVA_ON 控制 include）
+
+initial begin
+    if (N < 1) begin
+        $fatal(1, "[%m] N must be >= 1, got %0d", N);
+    end
+end
+
+// 授权至多一路
+a_gnt_onehot: assert property (
+    @(posedge clk) disable iff (!rst_n) gnt_vld |-> $onehot(gnt)
+);
+
+// 有请求必有授权，无请求必无授权
+a_gnt_vld_req: assert property (
+    @(posedge clk) disable iff (!rst_n) (gnt_vld == (|req))
+);
+
+// 授权只能落在请求位图上
+a_gnt_subset: assert property (
+    @(posedge clk) disable iff (!rst_n) ((gnt & ~req) == '0)
+);
+
+// 无授权时 ptr 保持
+a_ptr_stable: assert property (
+    @(posedge clk) disable iff (!rst_n) !gnt_vld |=> $stable(ptr)
+);
+
+// 授权后 ptr 指向被授权索引的下一路
+a_ptr_advance: assert property (
+    @(posedge clk) disable iff (!rst_n) gnt_vld |=> (
+        ptr == (($past(gnt_idx) == IDX_W'(N - 1)) ? '0 : ($past(gnt_idx) + 1'b1))
+    )
+);

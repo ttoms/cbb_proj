@@ -13,14 +13,14 @@
 | P2 数据通路、接口与保序 | 11 | 同步 FIFO 增强、位宽转换、CRC/编码、接口适配、流整形、链表/ID 池 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
 | P4 CDC（最低优先级，无需求不启动） | 5 | 单时钟项目，CDC 同步/异步 FIFO 无需求不启动 |
-| **合计** | **50** | 14 项已发布（首批），1 项模板已有，35 项待实施 |
+| **合计** | **50** | 16 项已发布（首批 14 + 二批 2），1 项模板已有，33 项待实施 |
 
 > `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §10。
 
 **首批迭代（P0 4 项 + P1 10 个简单件，共 14 项，已完成）**：先收编 4 个基础件，再完成 10 个简单件。
 
 - 首批 P1 简单件：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`。
-- 第二批复杂件：`reg_slice`（已完成）；`clkgate`、`arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` / `arbiter_wrapper`、`arbmux`、`strmux`（待启动）。
+- 第二批复杂件：`reg_slice`、`arbiter_rr`（已完成）；`clkgate`、`arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` / `arbiter_wrapper`、`arbmux`、`strmux`（待启动）。
 - CDC 全部保持 P4，不进入首批；单时钟项目，无需求不启动。
 
 ## 2. P0：基础件收编（首批，已发布）
@@ -49,7 +49,7 @@
 | CBB-UTIL-007 | `busmux` | `rtl/util` | 独热选择信号的数据 mux | 简单 | - | 已发布 | 首批 | 单热、无选择、多热行为、数据位宽 |
 | CBB-UTIL-008 | `binmux` | `rtl/util` | 二进制选择信号的数据 mux | 简单 | - | 已发布 | 首批 | 选择越界、无选择、位宽、组合延迟 |
 | CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 已发布 | 首批 | 无请求、全请求、优先级语义明确 |
-| CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | 指针回绕、单请求、全请求、公平性 |
+| CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 已发布 | 二批 | 指针回绕、单请求、全请求、公平性 |
 | CBB-ARB-003 | `arbiter_wrr` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | 权重边界、零权重、公平带宽、无饿死 |
 | CBB-ARB-004 | `arbiter_lru` | `rtl/arbiter` | 最近最少使用仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | 历史更新、连续请求、无饿死、复位 |
 | CBB-ARB-005 | `arbiter_qrr` | `rtl/arbiter` | QoS + 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 二批 | QoS 分组、同 QoS 轮询、高 QoS 优先、低 QoS 饿死说明 |
