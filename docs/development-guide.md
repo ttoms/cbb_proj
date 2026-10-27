@@ -32,14 +32,15 @@ cbb_proj/
 
 | 目录 | 放什么 |
 |---|---|
-| `rtl/basic` | 寄存器、复位、计数器、边沿/脉冲等基础单元 |
+| `rtl/basic` | 寄存器、复位、计数器、边沿/脉冲、时钟门控 |
 | `rtl/cdc` | 跨时钟域同步、异步 FIFO |
 | `rtl/memory` | 同步 FIFO、RAM/ROM 包装 |
 | `rtl/stream` | valid-ready 流控、`reg_slice`、流水线、位宽转换 |
+| `rtl/link` | 链路接口 `intf_rx` / `intf_tx`、`idpool`、`flow_shaper`、`link` 封装 |
 | `rtl/arbiter` | `arbiter_*` 仲裁核、`arbiter_wrapper` 统一封装、`arbmux` / `strmux` 选通 |
 | `rtl/bus` | APB / AXI-Lite 等总线粘合逻辑 |
 | `rtl/io` | UART / SPI / I2C / Timer / IRQ 等外设 |
-| `rtl/util` | CRC、格雷码、编码器等通用组合/时序工具 |
+| `rtl/util` | CRC、格雷码、编码器、bin/onehot 转换、`busmux` / `binmux` |
 
 文档落点：
 

@@ -35,7 +35,7 @@
 |---|---|
 | CBB ID | `CBB-<CATEGORY>-<NNN>` |
 | 模块名 | `<module>` |
-| 类别 | `basic` / `cdc` / `memory` / `stream` / `arbiter` / `bus` / `io` / `util` |
+| 类别 | `basic` / `cdc` / `memory` / `stream` / `link` / `arbiter` / `bus` / `io` / `util` |
 | 状态 | 待开发 / 待架构 / 已发布 / 已废弃 |
 | 版本 | `v0.1.0` |
 | 维护人 | `<name>` |

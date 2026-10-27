@@ -9,14 +9,14 @@
 | 阶段 | 数量 | 说明 |
 |---|---:|---|
 | P0 基础件收编 | 5 | 来自 my_env 模板，补验收与目录收编 |
-| P1 高频基础件 | 13 | 计数器、边沿/脉冲、仲裁家族、仲裁 mux、可配置 register slice |
-| P2 数据通路与 CDC | 10 | CDC 同步、异步 FIFO、位宽转换、CRC/编码 |
+| P1 高频基础件 | 19 | 计数器、边沿/脉冲、时钟门控、编码/选通、仲裁家族、可配置 register slice |
+| P2 数据通路、CDC 与链路层 | 15 | CDC 同步、异步 FIFO、位宽转换、CRC/编码、链路接口与封装 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
-| **合计** | **39** | 5 项模板已有，34 项待开发（其中 23 项需先详细设计） |
+| **合计** | **50** | 5 项模板已有，45 项待开发（其中 28 项需先详细设计） |
 
 > `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §9。
 
-**建议首批迭代（P0 + P1，共 18 项）**：先收编 5 个基础件，再完成 13 个高频件，形成后续 CDC / FIFO / 总线开发的依赖底座。
+**建议首批迭代（P0 + P1，共 24 项）**：先收编 5 个基础件，再完成 19 个高频件，形成后续 CDC / FIFO / 链路 / 总线开发的依赖底座。
 
 ## 2. P0：基础件收编（模板已有）
 
@@ -38,6 +38,12 @@
 | CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dff` | 待开发 | 复位后无假脉冲；输入抖动场景 |
 | CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `counter` | 待开发 | `N=1`、超长输入、背靠背脉冲 |
 | CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `counter` | 待开发 | 抖动/稳定边界、复位释放 |
+| CBB-BASIC-009 | `clkgate` | `rtl/basic` | 时钟门控封装，含 enable 同步与 test bypass | 简单 | `icg` | 待开发 | enable 毛刺、上电/复位、test bypass、门控时钟无毛刺 |
+| CBB-BASIC-010 | `icg` | `rtl/basic` | latch 型标准单元 ICG 行为模型/包装 | 简单 | - | 待开发 | latch 透明/锁存、enable 时序、仿真与综合替换一致 |
+| CBB-UTIL-005 | `bin2ohot` | `rtl/util` | 二进制 → 独热转换 | 简单 | - | 待开发 | 全零、最大索引、位宽边界、输出仅一位有效 |
+| CBB-UTIL-006 | `ohot2bin` | `rtl/util` | 独热 → 二进制转换 | 简单 | - | 待开发 | 单热、全零、多热行为、位宽边界 |
+| CBB-UTIL-007 | `busmux` | `rtl/util` | 独热选择信号的数据 mux | 简单 | - | 待开发 | 单热、无选择、多热行为、数据位宽 |
+| CBB-UTIL-008 | `binmux` | `rtl/util` | 二进制选择信号的数据 mux | 简单 | - | 待开发 | 选择越界、无选择、位宽、组合延迟 |
 | CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 待开发 | 无请求、全请求、优先级语义明确 |
 | CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 待架构 | 指针回绕、单请求、全请求、公平性 |
 | CBB-ARB-003 | `arbiter_wrr` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 待架构 | 权重边界、零权重、公平带宽、无饿死 |
@@ -48,7 +54,7 @@
 | CBB-ARB-008 | `strmux` | `rtl/arbiter` | stream 级选通 mux，内部集成 `arbiter_wrapper`，`GRAN` 选择 flit/packet 粒度 | 复杂 | `arbiter_wrapper` | 待架构 | `hop/top/vld/rdy/pld` 接口、flit/packet 粒度、packet 内不切换、各 `ARB_TYPE` 分支 |
 | CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 可配置 valid-ready 打拍切片，`RS_MODE` 选择 bypass/forward/backward/full | 复杂 | `dff` / `dffr` | 待架构 | 四种模式、反压不丢数/不重复、吞吐与延迟、模式参数非法值 |
 
-## 4. P2：数据通路与 CDC
+## 4. P2：数据通路、CDC 与链路层
 
 | ID | 模块名 | 目录 | 功能 | 复杂度 | 依赖 | 状态 | 关键验收点 |
 |---|---|---|---|---|---|---|---|
@@ -62,6 +68,11 @@
 | CBB-UTIL-002 | `onehot_pri_enc` | `rtl/util` | 独热/优先编码器 | 简单 | - | 待开发 | 全零、多热、位宽边界 |
 | CBB-UTIL-003 | `gray_conv` | `rtl/util` | 二进制 ↔ 格雷码转换 | 简单 | - | 待开发 | 位宽边界、往返一致 |
 | CBB-UTIL-004 | `parity` | `rtl/util` | 奇偶校验生成/检查 | 简单 | - | 待开发 | 奇/偶模式、位宽 1 |
+| CBB-LINK-001 | `intf_rx` | `rtl/link` | 链路接口接收侧适配/解码 | 复杂 | - | 待架构 | `hop/top/rop/vld/rdy/crdt/pld` 接口映射、背压、packet 边界、复位 |
+| CBB-LINK-002 | `intf_tx` | `rtl/link` | 链路接口发送侧适配/编码 | 复杂 | - | 待架构 | 接口映射、credit/rdy、packet 边界、不丢数/不重复 |
+| CBB-LINK-003 | `idpool` | `rtl/link` | ID 池分配与回收 | 复杂 | `dffr` | 待架构 | 分配/回收、满/空、重复释放、复位清空、无泄漏 |
+| CBB-LINK-004 | `flow_shaper` | `rtl/link` | 链路流量整形/速率控制 | 复杂 | `counter` | 待架构 | 令牌桶速率/突发、反压不丢包、参数越界、复位 |
+| CBB-LINK-005 | `link` | `rtl/link` | 链路层封装，集成 `intf_rx` / `intf_tx` / `idpool` / `flow_shaper` | 复杂 | `intf_rx` / `intf_tx` / `idpool` / `flow_shaper` | 待架构 | 子模块集成、背压、复位、接口一致性、不重复实现子模块逻辑 |
 
 ## 5. P3：总线与外设
 
@@ -143,21 +154,36 @@
 - `ARB_TYPE` 从 mux 参数透传到 `arbiter_wrapper`，只综合选中的仲裁核。
 - `hop/top/rop/vld/rdy/crdt/pld` 的完整位宽与语义后续按链路层接口定义展开；当前 `strmux` 只依赖 `hop/top/vld/rdy/pld`。
 
+### 6.4 链路层模块
+
+- `intf_rx` / `intf_tx`：链路接口接收/发送适配，接口字段为 `hop/top/rop/vld/rdy/crdt/pld`；位宽和字段语义后续展开。
+- `idpool`：ID 分配/回收必须无泄漏；重复释放安全；复位清空；分配策略在模块文档中明确。
+- `flow_shaper`：令牌桶/速率控制，默认通过反压限速而不是丢包；速率、突发参数越界在 elaboration 阶段报错。
+- `link`：只做链路层集成，例化 `intf_rx` / `intf_tx` / `idpool` / `flow_shaper`，不重复实现子模块逻辑。
+
 ## 7. 依赖关系速览
 
 ```text
 dff / dffr ──┬── counter ──┬── pulse_stretch
              │             ├── debounce
              │             ├── timer ── watchdog
+             │             ├── flow_shaper
              │             └── uart_tx / uart_rx / pwm
              ├── reg_slice（RS_BACKWARD 即 skid_buffer）
+             ├── idpool
              └── fifo_sync ── fifo_sync_af / width_conv
+
+icg ── clkgate
+
+bin2ohot / ohot2bin / busmux / binmux
 
 arbiter_pri ─┐
 arbiter_rr ──┤
 arbiter_wrr ─┼── arbiter_wrapper ──┬── arbmux
 arbiter_lru ─┤                     └── strmux
 arbiter_qrr ─┘
+
+intf_rx / intf_tx / idpool / flow_shaper ── link
 
 rst_sync ── 所有时序模块的复位释放
 
