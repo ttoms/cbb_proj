@@ -1,0 +1,69 @@
+// strmux 断言与参数检查（由 SVA_ON 控制 include）
+
+initial begin
+    if (N < 1) begin
+        $fatal(1, "[%m] N must be >= 1, got %0d", N);
+    end
+    if (PLD_W < 1) begin
+        $fatal(1, "[%m] PLD_W must be >= 1, got %0d", PLD_W);
+    end
+end
+
+// out_vld 必须来自实际有效输入
+a_out_vld_req: assert property (
+    @(posedge clk) disable iff (!rst_n) out_vld |-> (|in_vld)
+);
+
+// 发生输出握手时，in_rdy 恰好一位有效
+a_rdy_onehot: assert property (
+    @(posedge clk) disable iff (!rst_n) (out_vld && out_rdy) |-> $onehot(in_rdy)
+);
+
+// 未发生输出握手时，所有输入通道 in_rdy=0
+a_rdy_gated: assert property (
+    @(posedge clk) disable iff (!rst_n) !(out_vld && out_rdy) |-> (in_rdy == '0)
+);
+
+// in_rdy 只能落在有效输入上
+a_rdy_valid: assert property (
+    @(posedge clk) disable iff (!rst_n) ((in_rdy & ~in_vld) == '0)
+);
+
+// 反压期间 out_vld 保持、out_hop/out_top/out_pld 稳定
+a_stall_stable: assert property (
+    @(posedge clk) disable iff (!rst_n)
+    (out_vld && !out_rdy) |=> (out_vld && $stable(out_pld)
+                               && $stable(out_hop) && $stable(out_top))
+);
+
+// 输出字段必须来自被选中的通道
+genvar gi;
+generate
+    for (gi = 0; gi < N; gi++) begin : g_field_match
+        a_field_match: assert property (
+            @(posedge clk) disable iff (!rst_n) in_rdy[gi] |-> (
+                (out_pld == in_pld[gi*PLD_W +: PLD_W]) &&
+                (out_hop == in_hop[gi]) &&
+                (out_top == in_top[gi])
+            )
+        );
+    end
+endgenerate
+
+// GRAN_PACKET：头 flit 之后锁定，packet 内不切换，尾 flit 握手后释放
+generate
+    if (GRAN == 1'b1) begin : g_pkt
+        a_pkt_lock: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            (out_vld && out_rdy && sel_hop && !sel_top) |=> hold_vld
+        );
+        a_pkt_hold_until_top: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            (out_vld && out_rdy && hold_vld && !sel_top) |=> hold_vld
+        );
+        a_pkt_release: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            (out_vld && out_rdy && hold_vld && sel_top) |=> !hold_vld
+        );
+    end
+endgenerate
