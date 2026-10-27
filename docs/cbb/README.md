@@ -74,4 +74,5 @@
 | `arbiter_lru` | CBB-ARB-004 | [`arbiter_lru.md`](arbiter_lru.md) | 复杂件 |
 | `arbiter_qrr` | CBB-ARB-005 | [`arbiter_qrr.md`](arbiter_qrr.md) | 复杂件 |
 | `arbiter_wrapper` | CBB-ARB-006 | [`arbiter_wrapper.md`](arbiter_wrapper.md) | 复杂件 |
+| `arbmux` | CBB-ARB-007 | [`arbmux.md`](arbmux.md) | 复杂件 |
 | `reg_slice` | CBB-STREAM-002 | [`reg_slice.md`](reg_slice.md) | 复杂件 |
