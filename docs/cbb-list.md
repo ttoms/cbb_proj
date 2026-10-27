@@ -8,15 +8,16 @@
 
 | 阶段 | 数量 | 说明 |
 |---|---:|---|
-| P0 基础件收编 | 5 | 来自 my_env 模板，补验收与目录收编 |
-| P1 高频基础件 | 19 | 计数器、边沿/脉冲、时钟门控、编码/选通、仲裁家族、可配置 register slice |
-| P2 数据通路、CDC 与链路层 | 15 | CDC 同步、异步 FIFO、位宽转换、CRC/编码、链路接口与封装 |
+| P0 基础件收编 | 4 | 来自 my_env 模板，补验收与目录收编 |
+| P1 高频基础件 | 19 | 计数器、边沿/脉冲、自动时钟门控、编码/选通、仲裁家族、可配置 register slice |
+| P2 数据通路、接口与保序 | 11 | 同步 FIFO 增强、位宽转换、CRC/编码、接口适配、流整形、链表/ID 池 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
-| **合计** | **50** | 5 项模板已有，45 项待开发（其中 28 项需先详细设计） |
+| P4 CDC（最低优先级） | 5 | CDC 同步、异步 FIFO，整体最低优先级 |
+| **合计** | **50** | 5 项模板已有，45 项待开发（其中 29 项需先详细设计） |
 
-> `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §9。
+> `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §10。
 
-**建议首批迭代（P0 + P1，共 24 项）**：先收编 5 个基础件，再完成 19 个高频件，形成后续 CDC / FIFO / 链路 / 总线开发的依赖底座。
+**建议首批迭代（P0 + P1，共 23 项）**：先收编 4 个基础件，再完成 19 个高频件；CDC 相关不进入首批。
 
 ## 2. P0：基础件收编（模板已有）
 
@@ -25,7 +26,6 @@
 | CBB-BASIC-001 | `dff` | `rtl/basic` | 无复位数据通路寄存器，显式 `en` | 简单 | - | 模板已有 | 编译 + 自检 + 对齐；作为数据通路默认单元 |
 | CBB-BASIC-002 | `dffr` | `rtl/basic` | 异步复位控制寄存器，显式 `en` | 简单 | - | 模板已有 | 复位值常量、复位释放由 `rst_sync` 保证 |
 | CBB-BASIC-003 | `rst_sync` | `rtl/basic` | 异步复位、同步释放 | 简单 | - | 模板已有 | 复位释放无亚稳态；含参数检查 SVA |
-| CBB-BASIC-004 | `cdc_2ff` | `rtl/cdc` | 单 bit 2FF 同步器 | 简单 | - | 模板已有 | 仅限单 bit；多 bit 禁止裸 2FF |
 | CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready） | 复杂 | `dff` / `dffr` | 模板已有 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
 
 > 收编动作：复制模板为 `docs/cbb/<module>.md`，补全功能/端口/参数/使用说明（复杂件补齐微架构/数据流/状态机等章节），完成验收后更新本清单状态为“已发布”。`dff` 已提供示例文档：[`docs/cbb/dff.md`](cbb/dff.md)。
@@ -38,7 +38,7 @@
 | CBB-BASIC-006 | `edge_det` | `rtl/basic` | 上升/下降/双边沿检测，单周期脉冲 | 简单 | `dff` | 待开发 | 复位后无假脉冲；输入抖动场景 |
 | CBB-BASIC-007 | `pulse_stretch` | `rtl/basic` | 脉冲展宽 N 拍 | 简单 | `counter` | 待开发 | `N=1`、超长输入、背靠背脉冲 |
 | CBB-BASIC-008 | `debounce` | `rtl/basic` | N 拍稳定去抖 | 简单 | `counter` | 待开发 | 抖动/稳定边界、复位释放 |
-| CBB-BASIC-009 | `clkgate` | `rtl/basic` | 时钟门控封装，含 enable 同步与 test bypass | 简单 | `icg` | 待开发 | enable 毛刺、上电/复位、test bypass、门控时钟无毛刺 |
+| CBB-BASIC-009 | `clkgate` | `rtl/basic` | 自动时钟门控，根据 `wakeup` / `idle` 自动开关时钟，内部调用 `icg` | 复杂 | `icg` | 待架构 | wakeup 唤醒、idle 判定、自动开关钟、无毛刺、复位 |
 | CBB-BASIC-010 | `icg` | `rtl/basic` | latch 型标准单元 ICG 行为模型/包装 | 简单 | - | 待开发 | latch 透明/锁存、enable 时序、仿真与综合替换一致 |
 | CBB-UTIL-005 | `bin2ohot` | `rtl/util` | 二进制 → 独热转换 | 简单 | - | 待开发 | 全零、最大索引、位宽边界、输出仅一位有效 |
 | CBB-UTIL-006 | `ohot2bin` | `rtl/util` | 独热 → 二进制转换 | 简单 | - | 待开发 | 单热、全零、多热行为、位宽边界 |
@@ -54,25 +54,21 @@
 | CBB-ARB-008 | `strmux` | `rtl/arbiter` | stream 级选通 mux，内部集成 `arbiter_wrapper`，`GRAN` 选择 flit/packet 粒度 | 复杂 | `arbiter_wrapper` | 待架构 | `hop/top/vld/rdy/pld` 接口、flit/packet 粒度、packet 内不切换、各 `ARB_TYPE` 分支 |
 | CBB-STREAM-002 | `reg_slice` | `rtl/stream` | 可配置 valid-ready 打拍切片，`RS_MODE` 选择 bypass/forward/backward/full | 复杂 | `dff` / `dffr` | 待架构 | 四种模式、反压不丢数/不重复、吞吐与延迟、模式参数非法值 |
 
-## 4. P2：数据通路、CDC 与链路层
+## 4. P2：数据通路、接口与保序
 
 | ID | 模块名 | 目录 | 功能 | 复杂度 | 依赖 | 状态 | 关键验收点 |
 |---|---|---|---|---|---|---|---|
-| CBB-CDC-001 | `cdc_pulse` | `rtl/cdc` | 单 bit 脉冲跨时钟域（toggle/握手） | 复杂 | `cdc_2ff` | 待架构 | 慢到快/快到慢、脉冲不丢失/不重复 |
-| CBB-CDC-002 | `cdc_gray` | `rtl/cdc` | 多 bit 格雷码 CDC | 复杂 | `cdc_2ff` / `gray_conv` | 待架构 | 仅相邻变化；多 bit 禁止裸 2FF |
-| CBB-CDC-003 | `cdc_handshake` | `rtl/cdc` | 多 bit req/ack 握手同步 | 复杂 | `cdc_2ff` | 待架构 | 背靠背、复位边界、吞吐说明 |
-| CBB-CDC-004 | `fifo_async` | `rtl/cdc` | 异步 FIFO（格雷码指针） | 复杂 | `cdc_2ff` / `gray_conv` / `dff` / `dffr` | 待架构 | 满/空、指针同步、复位、跨域同时读写 |
 | CBB-MEM-002 | `fifo_sync_af` | `rtl/memory` | 同步 FIFO + almost_full/empty | 复杂 | `fifo_sync` | 待开发 | 阈值边界、阈值参数校验、组合/寄存输出 |
 | CBB-STREAM-003 | `width_conv` | `rtl/stream` | 位宽转换（窄↔宽） | 复杂 | `fifo_sync` / `reg_slice` | 待架构 | 非整数倍、尾包、背靠背 |
+| CBB-STREAM-004 | `intf_rx` | `rtl/stream` | 链路接口接收侧适配/解码 | 复杂 | - | 待架构 | `hop/top/rop/vld/rdy/crdt/pld` 接口映射、背压、packet 边界、复位 |
+| CBB-STREAM-005 | `intf_tx` | `rtl/stream` | 链路接口发送侧适配/编码 | 复杂 | - | 待架构 | 接口映射、credit/rdy、packet 边界、不丢数/不重复 |
+| CBB-STREAM-006 | `flow_shaper` | `rtl/stream` | 流级流量整形/速率控制 | 复杂 | `counter` | 待架构 | 令牌桶速率/突发、反压不丢包、参数越界、复位 |
 | CBB-UTIL-001 | `crc` | `rtl/util` | 参数化 CRC 生成/校验 | 复杂 | `dff` | 待开发 | 标准多项式、位序、初值/异或、逐位/并行 |
 | CBB-UTIL-002 | `onehot_pri_enc` | `rtl/util` | 独热/优先编码器 | 简单 | - | 待开发 | 全零、多热、位宽边界 |
 | CBB-UTIL-003 | `gray_conv` | `rtl/util` | 二进制 ↔ 格雷码转换 | 简单 | - | 待开发 | 位宽边界、往返一致 |
 | CBB-UTIL-004 | `parity` | `rtl/util` | 奇偶校验生成/检查 | 简单 | - | 待开发 | 奇/偶模式、位宽 1 |
-| CBB-LINK-001 | `intf_rx` | `rtl/link` | 链路接口接收侧适配/解码 | 复杂 | - | 待架构 | `hop/top/rop/vld/rdy/crdt/pld` 接口映射、背压、packet 边界、复位 |
-| CBB-LINK-002 | `intf_tx` | `rtl/link` | 链路接口发送侧适配/编码 | 复杂 | - | 待架构 | 接口映射、credit/rdy、packet 边界、不丢数/不重复 |
-| CBB-LINK-003 | `idpool` | `rtl/link` | ID 池分配与回收 | 复杂 | `dffr` | 待架构 | 分配/回收、满/空、重复释放、复位清空、无泄漏 |
-| CBB-LINK-004 | `flow_shaper` | `rtl/link` | 链路流量整形/速率控制 | 复杂 | `counter` | 待架构 | 令牌桶速率/突发、反压不丢包、参数越界、复位 |
-| CBB-LINK-005 | `link` | `rtl/link` | 链路层封装，集成 `intf_rx` / `intf_tx` / `idpool` / `flow_shaper` | 复杂 | `intf_rx` / `intf_tx` / `idpool` / `flow_shaper` | 待架构 | 子模块集成、背压、复位、接口一致性、不重复实现子模块逻辑 |
+| CBB-ORDER-001 | `link` | `rtl/order` | 链表管理，用于保序逻辑，配合 `idpool` 使用 | 复杂 | `idpool` / `dffr` | 待架构 | 节点分配/释放、插入/删除、顺序保持、满/空、复位 |
+| CBB-ORDER-002 | `idpool` | `rtl/order` | ID 池分配与回收，配合 `link` 保序 | 复杂 | `dffr` | 待架构 | 分配/回收、满/空、重复释放、复位清空、无泄漏 |
 
 ## 5. P3：总线与外设
 
@@ -90,9 +86,21 @@
 | CBB-IO-007 | `i2c_master` | `rtl/io` | I2C 主机 | 复杂 | `counter` | 待架构 | 起始/停止、ACK/NACK、时钟拉伸 |
 | CBB-IO-008 | `pwm` | `rtl/io` | PWM 生成 | 简单 | `counter` | 待开发 | 占空比 0%/100%、周期边界 |
 
-## 6. 关键设计约束
+## 6. P4：CDC（最低优先级）
 
-### 6.1 `reg_slice`：用 `RS_MODE` 统一 vld/rdy 打拍
+> 所有 CDC 相关 CBB 统一设为最低优先级，不进入首批；其它模块完成后按需启动。
+
+| ID | 模块名 | 目录 | 功能 | 复杂度 | 依赖 | 状态 | 关键验收点 |
+|---|---|---|---|---|---|---|---|
+| CBB-BASIC-004 | `cdc_2ff` | `rtl/cdc` | 单 bit 2FF 同步器 | 简单 | - | 模板已有 | 仅限单 bit；多 bit 禁止裸 2FF |
+| CBB-CDC-001 | `cdc_pulse` | `rtl/cdc` | 单 bit 脉冲跨时钟域（toggle/握手） | 复杂 | `cdc_2ff` | 待架构 | 慢到快/快到慢、脉冲不丢失/不重复 |
+| CBB-CDC-002 | `cdc_gray` | `rtl/cdc` | 多 bit 格雷码 CDC | 复杂 | `cdc_2ff` / `gray_conv` | 待架构 | 仅相邻变化；多 bit 禁止裸 2FF |
+| CBB-CDC-003 | `cdc_handshake` | `rtl/cdc` | 多 bit req/ack 握手同步 | 复杂 | `cdc_2ff` | 待架构 | 背靠背、复位边界、吞吐说明 |
+| CBB-CDC-004 | `fifo_async` | `rtl/cdc` | 异步 FIFO（格雷码指针） | 复杂 | `cdc_2ff` / `gray_conv` / `dff` / `dffr` | 待架构 | 满/空、指针同步、复位、跨域同时读写 |
+
+## 7. 关键设计约束
+
+### 7.1 `reg_slice`：用 `RS_MODE` 统一 vld/rdy 打拍
 
 `reg_slice` 是可配置切片；`skid_buffer` 不再单独实现，作为 `RS_MODE=RS_BACKWARD` 的预设用法。
 
@@ -109,7 +117,7 @@
 - `RS_BYPASS` 仅用于时序允许的场景，不能作为默认。
 - 非法编码在 elaboration 阶段报错。
 
-### 6.2 仲裁器家族与 `arbiter_wrapper`
+### 7.2 仲裁器家族与 `arbiter_wrapper`
 
 所有仲裁核统一命名为 `arbiter_*`，统一封装为 `arbiter_wrapper`。仲裁核保持独立、单一职责；`arbiter_wrapper` 只做参数选择和端口统一，不复制仲裁算法。
 
@@ -131,7 +139,7 @@
 - `arbiter_qrr` 在高 QoS 持续请求时可能饿死低 QoS，需在文档中明确；需要严格公平时改用 RR / WRR。
 - `N=1`、`req=0`、全请求、背靠背授予、非法 `ARB_TYPE` 均需覆盖。
 
-### 6.3 `arbmux` / `strmux`
+### 7.3 `arbmux` / `strmux`
 
 两类 mux 都只做选通，内部例化 `arbiter_wrapper`，不重复实现仲裁算法。
 
@@ -154,14 +162,20 @@
 - `ARB_TYPE` 从 mux 参数透传到 `arbiter_wrapper`，只综合选中的仲裁核。
 - `hop/top/rop/vld/rdy/crdt/pld` 的完整位宽与语义后续按链路层接口定义展开；当前 `strmux` 只依赖 `hop/top/vld/rdy/pld`。
 
-### 6.4 链路层模块
+### 7.4 接口、保序与流控模块
 
 - `intf_rx` / `intf_tx`：链路接口接收/发送适配，接口字段为 `hop/top/rop/vld/rdy/crdt/pld`；位宽和字段语义后续展开。
+- `link`：链表管理，用于保序相关逻辑，配合 `idpool` 使用；不是链路层封装。需覆盖节点分配/释放、插入/删除、顺序保持、满/空、复位。
 - `idpool`：ID 分配/回收必须无泄漏；重复释放安全；复位清空；分配策略在模块文档中明确。
 - `flow_shaper`：令牌桶/速率控制，默认通过反压限速而不是丢包；速率、突发参数越界在 elaboration 阶段报错。
-- `link`：只做链路层集成，例化 `intf_rx` / `intf_tx` / `idpool` / `flow_shaper`，不重复实现子模块逻辑。
 
-## 7. 依赖关系速览
+### 7.5 时钟门控
+
+- `icg`：latch 型标准单元 ICG 的行为模型/包装，只负责单元级门控行为。
+- `clkgate`：自动时钟门控模块，不是简单的 `icg` 封装；根据 `wakeup` / `idle` 自动开关时钟，内部调用 `icg`。
+- `clkgate` 需明确 wakeup 唤醒优先级、idle 判定条件/迟滞、门控后时钟无毛刺、复位默认状态。
+
+## 8. 依赖关系速览
 
 ```text
 dff / dffr ──┬── counter ──┬── pulse_stretch
@@ -170,7 +184,7 @@ dff / dffr ──┬── counter ──┬── pulse_stretch
              │             ├── flow_shaper
              │             └── uart_tx / uart_rx / pwm
              ├── reg_slice（RS_BACKWARD 即 skid_buffer）
-             ├── idpool
+             ├── idpool ── link（链表/保序）
              └── fifo_sync ── fifo_sync_af / width_conv
 
 icg ── clkgate
@@ -183,7 +197,7 @@ arbiter_wrr ─┼── arbiter_wrapper ──┬── arbmux
 arbiter_lru ─┤                     └── strmux
 arbiter_qrr ─┘
 
-intf_rx / intf_tx / idpool / flow_shaper ── link
+intf_rx / intf_tx（链路接口适配）
 
 rst_sync ── 所有时序模块的复位释放
 
@@ -195,7 +209,7 @@ cdc_2ff ──┬── cdc_pulse
 apb_slave / axil_reg_if ── axil2apb
 ```
 
-## 8. 通用验收基线
+## 9. 通用验收基线
 
 每个 CBB 发布前至少满足：
 
@@ -208,13 +222,13 @@ apb_slave / axil_reg_if ── axil2apb
 7. 已执行 `align.sh`，代码无对齐标记。
 8. 本清单中的状态、依赖、备注已更新。
 
-## 9. 已合并 / 已废弃
+## 10. 已合并 / 已废弃
 
 | ID | 模块名 | 状态 | 说明 |
 |---|---|---|---|
 | CBB-STREAM-001 | `skid_buffer` | 已合并 | 功能由 `reg_slice` 的 `RS_MODE=RS_BACKWARD` 覆盖，不单独开发 RTL；保留 ID 仅用于追溯 |
 
-## 10. 暂不纳入首版
+## 11. 暂不纳入首版
 
 - 商用 IP 级验证产物：覆盖率报告、回归列表、随机种子管理、形式化。
 - 工艺库相关的 SRAM/DFT/BIST 包装（等工艺确定后单独立项）。

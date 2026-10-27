@@ -35,8 +35,8 @@ cbb_proj/
 | `rtl/basic` | 寄存器、复位、计数器、边沿/脉冲、时钟门控 |
 | `rtl/cdc` | 跨时钟域同步、异步 FIFO |
 | `rtl/memory` | 同步 FIFO、RAM/ROM 包装 |
-| `rtl/stream` | valid-ready 流控、`reg_slice`、流水线、位宽转换 |
-| `rtl/link` | 链路接口 `intf_rx` / `intf_tx`、`idpool`、`flow_shaper`、`link` 封装 |
+| `rtl/stream` | valid-ready 流控、`reg_slice`、位宽转换、`intf_rx` / `intf_tx`、`flow_shaper` |
+| `rtl/order` | `link` 链表、`idpool` 保序资源池 |
 | `rtl/arbiter` | `arbiter_*` 仲裁核、`arbiter_wrapper` 统一封装、`arbmux` / `strmux` 选通 |
 | `rtl/bus` | APB / AXI-Lite 等总线粘合逻辑 |
 | `rtl/io` | UART / SPI / I2C / Timer / IRQ 等外设 |

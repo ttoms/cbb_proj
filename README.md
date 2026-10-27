@@ -20,8 +20,8 @@ cbb_proj/
 │   ├── basic/                   # DFF / 复位 / 计数器 / 边沿脉冲 / 时钟门控
 │   ├── cdc/                     # CDC 同步 / 异步 FIFO
 │   ├── memory/                  # 同步 FIFO / RAM / ROM 包装
-│   ├── stream/                  # valid-ready 流控 / reg_slice / 位宽转换
-│   ├── link/                    # 链路接口 rx/tx / idpool / flow_shaper / link
+│   ├── stream/                  # valid-ready 流控 / reg_slice / 位宽转换 / intf_rx/tx / flow_shaper
+│   ├── order/                   # link 链表 / idpool 保序资源池
 │   ├── arbiter/                 # arbiter_* 仲裁核 / arbiter_wrapper / arbmux / strmux
 │   ├── bus/                     # APB / AXI-Lite 粘合逻辑
 │   ├── io/                      # UART / SPI / I2C / Timer / IRQ
@@ -60,9 +60,9 @@ cbb_proj/
 
 ## 首批目标
 
-P0 + P1 共 24 项：
+P0 + P1 共 23 项（CDC 相关不进入首批）：
 
-- P0 收编：`dff`、`dffr`、`rst_sync`、`cdc_2ff`、`fifo_sync`
+- P0 收编：`dff`、`dffr`、`rst_sync`、`fifo_sync`
 - P1 开发：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`clkgate`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`、`arbiter_rr`、`arbiter_wrr`、`arbiter_lru`、`arbiter_qrr`、`arbiter_wrapper`、`arbmux`、`strmux`、`reg_slice`（含 `skid_buffer` 模式）
 
 ## 快速开始
