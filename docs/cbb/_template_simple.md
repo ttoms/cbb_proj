@@ -30,8 +30,12 @@ valid-ready（如适用）：`vld` 与 `data` 同周期，`vld` 不依赖 `rdy`�
 - **反压/握手**：`<何时拉低 rdy；是否丢数>`
 
 ```systemverilog
-<module> #(.<PARAM>(<value>)) U_<MODULE> (
-    .clk(clk), .rst_n(rst_n) /* 其余端口 */
+<module> #(
+    .<PARAM> (<value>)
+) U_<MODULE> (
+    .clk   (clk),
+    .rst_n (rst_n),
+    .<port>(<port>)
 );
 ```
 

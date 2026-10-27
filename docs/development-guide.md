@@ -88,8 +88,8 @@ vvp build/counter.simv
 # 3) SVA（可选；Verilator >= 5.0）
 verilator --assert -DSVA_ON --binary --timing --top-module counter_tb \
     rtl/basic/*.sv tb/basic/counter_tb.sv
-# Verilator 4.x 不支持 --binary，只做 lint：
-# verilator --lint-only -Wall --timing --top-module counter_tb rtl/basic/*.sv tb/basic/counter_tb.sv
+# Verilator 4.x 不支持 --binary / --timing，只做 lint：
+# verilator --lint-only -Wall --top-module counter_tb rtl/basic/*.sv tb/basic/counter_tb.sv
 
 # 4) 强制对齐
 scripts/align.sh rtl/basic/counter.sv

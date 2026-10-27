@@ -24,8 +24,13 @@
 - **反压/握手**：无内建反压，上游通过 `en` 控制写入。
 
 ```systemverilog
-dff #(.W(DATA_W)) U_DATA (
-    .clk(clk), .en(data_en), .d(data_d), .q(data_q)
+dff #(
+    .W (DATA_W)
+) U_DATA (
+    .clk (clk),
+    .en  (data_en),
+    .d   (data_d),
+    .q   (data_q)
 );
 ```
 ## 6. 限制
