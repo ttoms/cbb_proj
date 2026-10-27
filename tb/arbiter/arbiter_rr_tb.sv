@@ -14,12 +14,14 @@ module arbiter_rr_checker #(
     logic [N -1:0]  gnt     ;
     logic           gnt_vld ;
     logic           rst_n   ;
+    logic           upd     ;
 
     arbiter_rr #(
         .N (N)
     ) U_DUT (
         .clk     (clk    ),
         .rst_n   (rst_n  ),
+        .upd     (upd    ),
         .req     (req    ),
         .gnt     (gnt    ),
         .gnt_vld (gnt_vld)
@@ -40,6 +42,7 @@ module arbiter_rr_checker #(
     task automatic apply_reset;
         rst_n = 1'b0;
         req   = '0;
+        upd   = 1'b1;
         repeat (2) @(posedge clk);
         @(negedge clk);
         rst_n = 1'b1;
@@ -153,17 +156,62 @@ module arbiter_rr_checker #(
         end
     endtask
 
+    // upd=0 时 gnt 冻结、ptr 不推进；upd=1 后恢复推进
+    task automatic hold_test;
+        int held_sel;
+        int sel;
+
+        apply_reset();
+        upd = 1'b0;
+        req = '1;
+
+        @(negedge clk);
+        #1;
+        held_sel = rr_sel(req, 0);
+        check_grant(held_sel, "upd-hold-start");
+
+        for (int k = 0; k < 4; k++) begin
+            @(posedge clk);
+            #1;
+            check_grant(held_sel, "upd-hold");
+        end
+
+        // upd=1 的当拍仍输出原授权，下一拍指向下一路
+        @(negedge clk);
+        upd = 1'b1;
+        req = '1;
+        #1;
+        check_grant(held_sel, "upd-resume-same");
+
+        @(posedge clk);
+        #1;
+        @(negedge clk);
+        req = '1;
+        #1;
+        sel = (held_sel == (N - 1)) ? 0 : (held_sel + 1);
+        check_grant(sel, "upd-resume-next");
+
+        @(posedge clk);
+        #1;
+
+        req = '0;
+        upd = 1'b1;
+        #1;
+    endtask
+
     initial begin
         errors = 0;
         done   = 1'b0;
         rst_n  = 1'b0;
         req    = '0;
+        upd    = 1'b1;
         repeat (3) @(posedge clk);
 
         random_test(N_RANDOM);
         fairness_test();
         single_test();
         no_req_test(3);
+        hold_test();
 
         done = 1'b1;
     end

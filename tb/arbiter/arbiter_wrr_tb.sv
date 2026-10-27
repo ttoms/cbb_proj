@@ -16,6 +16,7 @@ module arbiter_wrr_checker #(
     logic [N -1:0]          gnt     ;
     logic                   gnt_vld ;
     logic                   rst_n   ;
+    logic                   upd     ;
 
     int cnt [N];
 
@@ -25,6 +26,7 @@ module arbiter_wrr_checker #(
     ) U_DUT (
         .clk     (clk     ),
         .rst_n   (rst_n   ),
+        .upd     (upd     ),
         .req     (req     ),
         .weight  (WEIGHTS ),
         .gnt     (gnt     ),
@@ -61,6 +63,7 @@ module arbiter_wrr_checker #(
     task automatic apply_reset;
         rst_n = 1'b0;
         req   = '0;
+        upd   = 1'b1;
         repeat (2) @(posedge clk);
         @(negedge clk);
         rst_n = 1'b1;
@@ -179,15 +182,63 @@ module arbiter_wrr_checker #(
         #1;
     endtask
 
+    // upd=0 时 gnt 冻结、credit 不扣减；upd=1 后恢复计费
+    task automatic hold_test;
+        logic [N -1:0] held;
+        logic          has_req;
+
+        apply_reset();
+        upd = 1'b0;
+        req = '1;
+        #1;
+        check_cycle(req, "upd-hold-start");
+        held    = gnt;
+        has_req = |(req & w_mask());
+
+        for (int k = 0; k < 4; k++) begin
+            @(posedge clk);
+            #1;
+            @(negedge clk);
+            req = '1;
+            #1;
+            if (gnt_vld !== has_req) begin
+                errors++;
+                $display("FAIL: N=%0d weight=%h upd-hold gnt_vld got %b exp %b",
+                         N, WEIGHTS, gnt_vld, has_req);
+            end
+            if (has_req && (gnt !== held)) begin
+                errors++;
+                $display("FAIL: N=%0d weight=%h upd-hold gnt drifted got %b exp %b",
+                         N, WEIGHTS, gnt, held);
+            end
+        end
+
+        upd = 1'b1;
+        @(posedge clk);
+        #1;
+        @(negedge clk);
+        req = '1;
+        #1;
+        check_cycle(req, "upd-resume");
+        @(posedge clk);
+        #1;
+
+        req = '0;
+        upd = 1'b1;
+        #1;
+    endtask
+
     initial begin
         errors = 0;
         done   = 1'b0;
         rst_n  = 1'b0;
         req    = '0;
+        upd    = 1'b1;
         repeat (3) @(posedge clk);
 
         weighted_test(3);
         random_test(N_RANDOM);
+        hold_test();
 
         done = 1'b1;
     end

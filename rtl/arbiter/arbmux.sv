@@ -6,6 +6,7 @@
 //   - 多路 flit 输入按 ARB_TYPE 仲裁，选中一路输出
 //   - 未选中通道 in_rdy=0，无请求时 out_vld=0
 //   - 反压期间锁存选通结果，out_pld 保持稳定，不丢数、不重复
+//   - 仲裁核 upd 采用输出握手 out_vld & out_rdy，仅在 flit 被消费时推进
 //   - weight / qos 透传给 arbiter_wrapper 对应类型
 // Parameters :
 //   N        - 输入通道数，默认 4，必须 >= 1
@@ -14,7 +15,7 @@
 //   WEIGHT_W - 权重位宽，默认 2
 //   QOS_W    - QoS 位宽，默认 2
 // Limitations :
-//   - 反压期间仲裁核仍会推进内部指针/credit，长反压后首次授权分布可能偏移
+//   - 反压锁存期间仲裁核状态冻结；解锁后又回到同一通道时仍按该次授权计一次
 //   - 不保持 packet 边界，逐 flit 重新仲裁；packet 粒度请用 strmux
 //==============================================================================
 module arbmux #(
@@ -45,12 +46,15 @@ module arbmux #(
     logic           hold_set    ;
     logic           hold_clr    ;
     logic           hold_en     ;
+    logic           arb_upd     ;
 
     assign hold_vld = |hold_oh;
     assign sel_oh   = hold_vld ? hold_oh : gnt;
 
     assign out_vld = hold_vld ? |(in_vld & hold_oh) : gnt_vld;
     assign in_rdy  = {N{out_vld & out_rdy}} & sel_oh;
+
+    assign arb_upd = out_vld & out_rdy;
 
     assign hold_set = out_vld & ~out_rdy & ~hold_vld;
     assign hold_clr = out_vld & out_rdy & hold_vld;
@@ -74,6 +78,7 @@ arbiter_wrapper #(
 ) U_ARB (
     .clk        (clk        ),
     .rst_n      (rst_n      ),
+    .upd        (arb_upd    ),
     .req        (in_vld     ),
     .weight     (weight     ),
     .qos        (qos        ),

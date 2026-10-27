@@ -7,7 +7,7 @@
 | 模块名 | `arbiter_wrapper` |
 | 类别 | `arbiter` |
 | 状态 | 已发布 |
-| 版本 | `v0.1.0` |
+| 版本 | `v0.1.1` |
 | 维护人 | - |
 | 更新时间 | 2026-10-27 |
 
@@ -21,6 +21,7 @@
 |---|---|---|---|---|
 | `clk` | input | 1 | - | 时钟；`ARB_FIXED` 不使用 |
 | `rst_n` | input | 1 | `clk` | 异步复位、同步释放，低有效；`ARB_FIXED` 不使用 |
+| `upd` | input | 1 | `clk` | 当前 `gnt` 被消费；透传给状态型核；`ARB_FIXED` 不使用 |
 | `req` | input | `N` | `clk` | 请求位图，每路 1 bit |
 | `weight` | input | `N*WEIGHT_W` | `clk` | 每路权重，扁平打包，第 `i` 路占 `weight[i*WEIGHT_W +: WEIGHT_W]`；仅 `ARB_WRR` 使用，其余类型忽略 |
 | `qos` | input | `N*QOS_W` | `clk` | 每路 QoS，扁平打包，第 `i` 路占 `qos[i*QOS_W +: QOS_W]`；仅 `ARB_QRR` 使用，其余类型忽略 |
@@ -28,6 +29,8 @@
 | `gnt_vld` | output | 1 | `clk` | 有授权时为 1；除 `ARB_WRR`（全零权重）外通常等于 `OR(req)` |
 
 无 valid-ready 握手；`gnt` 为组合输出（`arbiter_rr/wrr/lru/qrr` 内含指针/年龄寄存器），`req` 在授权周期内必须保持有效。
+
+`upd` 透传给 `ARB_RR` / `ARB_WRR` / `ARB_LRU` / `ARB_QRR`，表示当前 `gnt` 已被下游消费；仅 `gnt_vld & upd` 时内部状态更新。`ARB_FIXED` 无内部状态，`upd` 被忽略。
 
 ## 4. 参数表 [M]
 | 参数 | 类型 | 默认值 | 合法范围 | 说明 |
@@ -50,8 +53,9 @@
 ## 5. 使用说明 [M]
 - **时钟/复位**：`ARB_FIXED` 为纯组合，`clk/rst_n` 悬空；其余类型使用单时钟与异步复位，建议 `rst_n` 由 `rst_sync` 产生。
 - **延迟/吞吐**：`req → gnt` 组合；每拍最多一个授权，持续请求时 1 次授权/拍。
-- **反压**：无。上层（`arbmux` / `strmux`）负责在未握手时保持请求。
-- **参数选择**：`ARB_TYPE` 是 elaboration 参数，只综合选中的仲裁核；未使用类型的输入（`weight` / `qos` / `clk` / `rst_n`）在该分支被 `unused_nc` 吸收，避免 lint 悬空告警。
+- **反压**：无。上层（`arbmux` / `strmux`）负责在未握手时保持请求，并用输出握手生成 `upd`。
+- **upd 语义**：`upd=1` 表示当前 `gnt` 被使用；`ARB_FIXED` 忽略该信号，其余类型仅在 `gnt_vld & upd` 时更新内部指针/credit/年龄。
+- **参数选择**：`ARB_TYPE` 是 elaboration 参数，只综合选中的仲裁核；未使用类型的输入（`weight` / `qos` / `upd` / `clk` / `rst_n`）在该分支被 `unused_nc` 吸收，避免 lint 悬空告警。
 - **限制**：`ARB_WRR` 的 `weight=0` 表示该路不参与，全零时 `gnt_vld=0`；`ARB_QRR` 高 QoS 持续请求可能饿死低 QoS。
 
 ```systemverilog
@@ -63,6 +67,7 @@ arbiter_wrapper #(
 ) U_ARB (
     .clk     (clk),
     .rst_n   (rst_n),
+    .upd     (upd),
     .req     (req),
     .weight  (weight),
     .qos     (qos),
@@ -77,7 +82,7 @@ arbiter_wrapper #(
 
 ## 7. 限制与注意 [M]
 - `ARB_TYPE` 不能运行期切换；切换必须重新例化。
-- `ARB_FIXED` 的 `clk/rst_n` 不参与逻辑，综合后会悬空，属预期。
+- `ARB_FIXED` 的 `clk/rst_n/upd` 不参与逻辑，综合后会悬空，属预期。
 - `weight` / `qos` 在非对应类型下被完全忽略，连线可保留但不要依赖其效果。
 - `gnt_vld` 在 `ARB_WRR` 全零权重时不等于 `OR(req)`，上层不得用 `gnt_vld == |req` 作为通用假设。
 - 请求位图在授权周期内必须稳定；组合撤销请求可能导致 `gnt` 抖动。
@@ -86,7 +91,7 @@ arbiter_wrapper #(
 | 项 | 结果 |
 |---|---|
 | `quality_gate.py` | PASS（0 error，0 warning） |
-| 定向 TB | `tb/arbiter/arbiter_wrapper_tb.sv` PASS：`FIXED N=4/1`、`RR N=4/1`、`WRR N=4 weight={3,0,2,0}`、`LRU N=4`、`QRR N=4 qos={3,1,2,0}`、非法 `ARB_TYPE=3'b101` 共 8 组；每组 200 拍随机 + 全请求背靠背 + 无请求，逐拍与对应仲裁核参考输出比对 |
+| 定向 TB | `tb/arbiter/arbiter_wrapper_tb.sv` PASS：`FIXED N=4/1`、`RR N=4/1`、`WRR N=4 weight={3,0,2,0}`、`LRU N=4`、`QRR N=4 qos={3,1,2,0}`、非法 `ARB_TYPE=3'b101` 共 8 组；每组 200 拍随机（随机 `upd`）+ 全请求背靠背 + 无请求，逐拍与对应仲裁核参考输出比对 |
 | SVA | `arbiter_wrapper.sva`：参数检查（`N`/`WEIGHT_W`/`QOS_W`/`ARB_TYPE`）、`gnt` 独热、授权属于请求、有授权必为请求、无请求不得授权；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
 | 未覆盖项 | 非法 `ARB_TYPE` 仅在 iverilog（未开 `SVA_ON`）下验证锁零，开启 SVA 时按参数检查 `$fatal`；`N > 8`、`req` 为 X/Z、运行期更换类型（不支持）、门级/综合时序与面积、形式化验证 |
@@ -115,14 +120,14 @@ arbiter_wrapper #(
 
 - **数据流**：
   - 参数译码：按 `ARB_TYPE` 选中一个 `U_ARB` 分支，其余分支不产生网表。
-  - 输入分发：`req` 始终接入选中核；`weight` 只接 WRR，`qos` 只接 QRR；其余输入在该分支被 `unused_nc = &{1'b0, ...}` 吸收。
+  - 输入分发：`req` 始终接入选中核；`upd` 接入所有状态型核，`weight` 只接 WRR，`qos` 只接 QRR；其余输入在该分支被 `unused_nc = &{1'b0, ...}` 吸收。
   - 输出汇聚：选中核的 `gnt` / `gnt_vld` 直接驱动 wrapper 输出，无额外逻辑。
   - 非法类型：`default` 分支把 `gnt` / `gnt_vld` 锁 0，避免未驱动输出。
 - **关键寄存器/存储体**：wrapper 自身无寄存器；状态全部位于选中核内部（`ptr` / `credit` / `age`）。
 
 | 名称 | 用途 | 复位 | 更新条件（en） |
 |---|---|---|---|
-| 选中核内部寄存器 | 由 `ARB_TYPE` 决定（`ptr` / `credit` / `age`） | 选中核的 `dffr` 复位 0 | 由选中核内部决定 |
+| 选中核内部寄存器 | 由 `ARB_TYPE` 决定（`ptr` / `credit` / `age`） | 选中核的 `dffr` 复位 0 | 选中核内部按 `gnt_vld & upd` 更新 |
 
 - **关键设计决策**：wrapper 不复制算法、不加流水，只做零成本抽象；`default` 分支锁零而非悬空，保证非法参数下仿真/综合都有确定行为。
 
@@ -149,6 +154,7 @@ arbiter_wrapper #(
 ## 13. 版本记录 [M]
 | 版本 | 日期 | 变更 | 兼容性 |
 |---|---|---|---|
+| `v0.1.1` | 2026-10-27 | 增加 `upd` 输入并透传给状态型仲裁核 | 端口不兼容 |
 | `v0.1.0` | 2026-10-27 | 初版：`ARB_TYPE` 五分支封装 + 非法类型锁零 | - |
 
 ## 14. 相关文档 [O]

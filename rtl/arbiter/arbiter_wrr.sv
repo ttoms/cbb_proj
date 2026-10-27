@@ -6,12 +6,14 @@
 //   - 输出独热 gnt，gnt_vld=OR(有效请求)
 //   - weight=0 的通道不参与仲裁；全零时无授权
 //   - 每轮按权重发放 credit，耗尽后同拍重装，无气泡
+//   - 仅当 upd=1（当前 gnt 被使用）时 credit 与 ptr 更新
 //   - 同权重通道从 ptr 起轮询，长期公平
 // Parameters :
 //   N        - 请求路数，默认 4，必须 >= 1
 //   WEIGHT_W - 每路权重位宽，默认 2，必须 >= 1
 // Limitations :
 //   - weight 视为静态配置，运行期变化可能导致 credit 越界
+//   - upd 必须与当前 gnt 的消费拍对齐；upd 恒 1 等价于逐拍推进
 //   - 一轮内同一通道可能连续获得授权，瞬时存在突发
 //==============================================================================
 module arbiter_wrr #(
@@ -20,6 +22,7 @@ module arbiter_wrr #(
 ) (
     input   logic                   clk     ,
     input   logic                   rst_n   ,
+    input   logic                   upd     ,
     input   logic [N          -1:0] req     ,
     input   logic [N*WEIGHT_W -1:0] weight  ,
     output  logic [N          -1:0] gnt     ,
@@ -87,8 +90,8 @@ always_comb begin
     end
 end
 
-assign credit_en = gnt_vld;
-assign ptr_en    = gnt_vld;
+assign credit_en = gnt_vld & upd;
+assign ptr_en    = gnt_vld & upd;
 assign nxt_ptr   = (gnt_idx == IDX_W'(N - 1)) ? '0 : (gnt_idx + 1'b1);
 
 dffr #(

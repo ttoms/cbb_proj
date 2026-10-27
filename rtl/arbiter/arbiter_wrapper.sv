@@ -4,6 +4,7 @@
 // Description : 仲裁器统一封装，按 ARB_TYPE 选择仲裁核
 // Features :
 //   - 统一 req/gnt/gnt_vld 接口，weight/qos 仅对应类型使用
+//   - upd 透传给状态型仲裁核，表示当前 gnt 已被消费
 //   - generate case 只综合选中的仲裁核
 //   - 非法 ARB_TYPE 时输出锁零，仿真期由 SVA 报错
 // Parameters :
@@ -13,7 +14,8 @@
 //   QOS_W    - QoS 位宽，默认 2，仅 ARB_QRR 使用
 // Limitations :
 //   - 运行期不可切换 ARB_TYPE
-//   - ARB_FIXED 不使用 clk/rst_n/weight/qos，ARB_RR/LRU 不使用 weight/qos
+//   - ARB_FIXED 不使用 clk/rst_n/upd/weight/qos，ARB_RR/LRU 不使用 weight/qos
+//   - upd 仅对状态型核（RR/WRR/LRU/QRR）有效，FIXED 无内部状态
 //==============================================================================
 module arbiter_wrapper #(
     parameter   int         N           =   4       ,
@@ -23,6 +25,7 @@ module arbiter_wrapper #(
 ) (
     input   logic                   clk     ,
     input   logic                   rst_n   ,
+    input   logic                   upd     ,
     input   logic [N          -1:0] req     ,
     input   logic [N*WEIGHT_W -1:0] weight  ,
     input   logic [N*QOS_W    -1:0] qos     ,
@@ -41,7 +44,7 @@ generate
         ARB_FIXED: begin : g_fixed
             logic unused_nc;
 
-            assign unused_nc = &{1'b0, clk, rst_n, weight, qos};
+            assign unused_nc = &{1'b0, clk, rst_n, upd, weight, qos};
 
             arbiter_pri #(
                 .N  (N  )
@@ -62,6 +65,7 @@ generate
             ) U_ARB (
                 .clk        (clk        ),
                 .rst_n      (rst_n      ),
+                .upd        (upd        ),
                 .req        (req        ),
                 .gnt        (gnt        ),
                 .gnt_vld    (gnt_vld    )
@@ -79,6 +83,7 @@ generate
             ) U_ARB (
                 .clk        (clk        ),
                 .rst_n      (rst_n      ),
+                .upd        (upd        ),
                 .req        (req        ),
                 .weight     (weight     ),
                 .gnt        (gnt        ),
@@ -96,6 +101,7 @@ generate
             ) U_ARB (
                 .clk        (clk        ),
                 .rst_n      (rst_n      ),
+                .upd        (upd        ),
                 .req        (req        ),
                 .gnt        (gnt        ),
                 .gnt_vld    (gnt_vld    )
@@ -113,6 +119,7 @@ generate
             ) U_ARB (
                 .clk        (clk        ),
                 .rst_n      (rst_n      ),
+                .upd        (upd        ),
                 .req        (req        ),
                 .qos        (qos        ),
                 .gnt        (gnt        ),
@@ -125,7 +132,7 @@ generate
 
             assign gnt     = '0;
             assign gnt_vld = 1'b0;
-            assign unused_nc = &{1'b0, clk, rst_n, req, weight, qos};
+            assign unused_nc = &{1'b0, clk, rst_n, upd, req, weight, qos};
         end
     endcase
 endgenerate

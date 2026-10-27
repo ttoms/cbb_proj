@@ -5,11 +5,12 @@
 // Features :
 //   - 输出独热 gnt，gnt_vld=OR(req)
 //   - 无请求时 gnt=0、gnt_vld=0，ptr 保持
-//   - 每次授权后 ptr 指向被授权索引的下一路，保证轮询公平
+//   - 仅当 upd=1（当前 gnt 被使用）时 ptr 才指向被授权索引的下一路
 // Parameters :
 //   N - 请求路数，默认 4，必须 >= 1
 // Limitations :
 //   - gnt 为组合输出，授权方需保证请求在握手周期内有效
+//   - upd 必须与当前 gnt 的消费拍对齐；upd 恒 1 等价于逐拍推进
 //   - 同一索引持续独占时，其余请求最多等待 N-1 次授权
 //==============================================================================
 module arbiter_rr #(
@@ -17,6 +18,7 @@ module arbiter_rr #(
 ) (
     input   logic           clk     ,
     input   logic           rst_n   ,
+    input   logic           upd     ,
     input   logic [N -1:0]  req     ,
     output  logic [N -1:0]  gnt     ,
     output  logic           gnt_vld
@@ -46,7 +48,7 @@ always_comb begin
     end
 end
 
-assign ptr_en  = gnt_vld;
+assign ptr_en  = gnt_vld & upd;
 assign nxt_ptr = (gnt_idx == IDX_W'(N - 1)) ? '0 : (gnt_idx + 1'b1);
 
 dffr #(

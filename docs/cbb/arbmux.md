@@ -7,7 +7,7 @@
 | 模块名 | `arbmux` |
 | 类别 | `arbiter` |
 | 状态 | 已发布 |
-| 版本 | `v0.1.1` |
+| 版本 | `v0.1.2` |
 | 维护人 | - |
 | 更新时间 | 2026-10-27 |
 
@@ -32,6 +32,8 @@
 
 valid-ready 语义：`out_vld` 与 `out_pld` 同拍有效，`out_vld` 不依赖 `out_rdy`；`in_rdy[i]` 为 1 表示第 `i` 路 flit 在本拍被消费。
 
+本模块不向外暴露 `upd`，内部按 `arb_upd = out_vld & out_rdy` 生成并接入 `arbiter_wrapper`：每个被消费的 flit 计一次授权，反压锁存期间仲裁状态冻结。
+
 ## 4. 参数表 [M]
 | 参数 | 类型 | 默认值 | 合法范围 | 说明 |
 |---|---|---|---|---|
@@ -48,7 +50,8 @@ valid-ready 语义：`out_vld` 与 `out_pld` 同拍有效，`out_vld` 不依赖 
 - **延迟/吞吐**：无阻塞时 `in_vld/in_pld → out_vld/out_pld` 为组合通路，0 拍额外延迟，持续请求时 1 flit/拍。首次遇反压时在下一时钟沿锁存选通通道（1 拍），之后保持。
 - **反压/握手**：`out_vld && !out_rdy` 时锁存当前选通结果，`out_pld` 保持稳定；源端必须按 valid-ready 规则保持 `in_vld` 与 `in_pld` 直到 `in_rdy` 拉高。
 - **仲裁类型**：`ARB_TYPE` 为 elaboration 参数，只综合选中的仲裁核；`weight` / `qos` 仅对应类型生效。
-- **限制**：反压期间仲裁核仍看到请求，其内部指针/credit/年龄会继续推进，长时间反压后释放时的授权分布可能偏移；不做 packet 边界保持，需要 packet 粒度请用 `strmux`。
+- **upd 生成**：内部 `arb_upd = out_vld & out_rdy`，只在 flit 被下游消费时推进仲裁核状态；反压锁存期间指针/credit/年龄保持不变。
+- **限制**：反压锁存期间仲裁状态冻结，解锁后回到同一通道时按该次授权计一次；不做 packet 边界保持，需要 packet 粒度请用 `strmux`。
 
 ```systemverilog
 arbmux #(
@@ -78,7 +81,7 @@ arbmux #(
 ## 7. 限制与注意 [M]
 - 源端必须遵守 valid-ready：`in_rdy=0` 期间不得撤销 `in_vld`、不得改变 `in_pld`；否则输出可能丢数。
 - 反压期间被忽略的非选中通道请求不会得到 `in_rdy`，源端需自行保持。
-- 仲裁核在反压期间继续推进内部状态，长期反压会改变释放后的授权顺序；这是面积/复杂度取舍，不保证“反压前后轮询点完全一致”。
+- 仲裁核在反压期间状态冻结（`upd=0`），释放后从同一授权点继续，不会因反压时长改变轮询/credit 进度。
 - 逐 flit 重新仲裁，不保证同一 packet 的 flit 连续输出；packet 语义请用 `strmux`。
 - `ARB_TYPE` 不可运行期切换；切换需重新例化。
 
@@ -89,7 +92,7 @@ arbmux #(
 | 定向 TB | `tb/arbiter/arbmux_tb.sv` PASS：`FIXED N=4`、`RR N=4`、`WRR N=4 weight=8'h83`、`LRU N=4`、`QRR N=4 qos=8'h2B`、`RR N=1` 共 6 组；每组 200 拍随机流量 + 全通道反压保持/释放 + 无请求场景，逐拍 scoreboard 校验 |
 | SVA | `arbmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、反压期间 `out_vld`/`out_pld` 稳定、`out_pld` 与被选中通道一致；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
-| 未覆盖项 | packet 边界（不属于本模块）、`N > 8`、`in_vld`/`in_pld` 为 X/Z、源端违反 valid-ready 的非法输入、超长反压后的公平性偏移量化、门级/综合时序与面积、形式化验证 |
+| 未覆盖项 | packet 边界（不属于本模块）、`N > 8`、`in_vld`/`in_pld` 为 X/Z、源端违反 valid-ready 的非法输入、门级/综合时序与面积、形式化验证 |
 
 说明：TB 直接用 packed 切片（`in_pld[i*PLD_W +: PLD_W]`）驱动负载，而不从 unpacked 数组经 `generate assign` 汇聚。原因是 Verilator 不会在运行期写 unpacked 数组元素后重新触发该连续赋值（iverilog 正常），会造成仅 Verilator 下的假失败。
 
@@ -112,13 +115,14 @@ arbmux #(
                         │                      ├──► in_rdy  = {N{out_vld & out_rdy}} & sel_oh
                         │                      └──► out_pld = mux(in_pld, sel_oh)
                         │
+                        └──► U_ARB.upd = out_vld & out_rdy
                    U_HOLD (dffr, N bit)
                    hold_set: out_vld & ~out_rdy & ~hold_vld → d = gnt
                    hold_clr: out_vld &  out_rdy &  hold_vld → d = 0
 ```
 
 - **数据流**：
-  - 请求分发：`in_vld` 直接作为仲裁请求进入 `U_ARB`，不因反压而屏蔽；`weight` / `qos` 透传。
+  - 请求分发：`in_vld` 直接作为仲裁请求进入 `U_ARB`，不因反压而屏蔽；`weight` / `qos` 透传；`upd` 由输出握手 `out_vld & out_rdy` 生成。
   - 选择：无锁存时用 `gnt`；有锁存时用 `hold_oh`，忽略仲裁核当拍授权。
   - 输出有效：无锁存时等价于 `gnt_vld`（有合法授权）；有锁存时要求被锁存通道的 `in_vld` 仍有效。
   - 反压：`in_rdy` 只在 `out_vld & out_rdy` 的握手拍对 `sel_oh` 置位，未选中通道恒为 0。
@@ -162,18 +166,19 @@ arbmux #(
 
 - **关键路径/流水线**：`in_vld → arbiter_wrapper（组合仲裁）→ sel_oh → out_vld/in_rdy/out_pld`。无反压时单级组合；反压时经 `hold_oh` 旁路仲裁核，缩短释放拍组合路径。
 - **反压路径**：`out_rdy → in_rdy` 为组合；`out_rdy` 参与 `hold_set/hold_clr`，只影响 `U_HOLD` 的 en/d，不组合回灌仲裁核。
-- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热 mux + `in_rdy` 与门；无额外 flit 存储。反压期间仲裁核仍在翻转，功耗略高于完全冻结方案。
-- **取舍**：选择“只锁选通、不锁数据”，面积最小，代价是要求源端严格遵守 valid-ready，且仲裁核在反压期间持续推进。
+- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热 mux + `in_rdy` 与门；无额外 flit 存储。反压期间仲裁核 `upd=0`、状态不翻转，功耗低于“持续推进”方案。
+- **取舍**：选择“只锁选通、不锁数据”，面积最小，代价是要求源端严格遵守 valid-ready；`upd` 让仲裁核只在消费拍推进，反压期间状态冻结，行为可预测。
 
 ## 12. 风险与未覆盖项 [C]
 - **风险**：源端违反 valid-ready（反压期间撤销 `in_vld` 或改 `in_pld`）会导致丢数或负载错配，模块内无检测。
-- **风险**：长反压后仲裁核状态已推进，释放后的授权分布与“冻结仲裁”方案不同；对严格公平性有要求的场景需在上层评估。
+- **风险**：锁存期间仲裁核的 `gnt` 可能随请求变化而与 `hold_oh` 不同；`upd` 仍按握手计一次，恢复后的指针以仲裁核当时的授权为准。对严格公平性有要求的场景需评估该行为。
 - **限制**：单时钟；无 packet 边界；`ARB_TYPE` 不可运行期切换；未选中通道在反压期间拿不到 `in_rdy`。
-- **未覆盖项**：`N > 8`、`in_vld`/`in_pld` 为 X/Z、非法源端时序、超长反压公平性量化、门级仿真与综合时序/面积、形式化验证。
+- **未覆盖项**：`N > 8`、`in_vld`/`in_pld` 为 X/Z、非法源端时序、门级仿真与综合时序/面积、形式化验证。
 
 ## 13. 版本记录 [M]
 | 版本 | 日期 | 变更 | 兼容性 |
 |---|---|---|---|
+| `v0.1.2` | 2026-10-27 | 仲裁核接入 `upd = out_vld & out_rdy`，反压期间状态冻结 | 兼容 |
 | `v0.1.1` | 2026-10-27 | 统一仿真器声明与门控检查项措辞 | 兼容 |
 | `v0.1.0` | 2026-10-27 | 初版：flit 级选通 + 反压锁存选通通道 | - |
 

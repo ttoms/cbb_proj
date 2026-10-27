@@ -21,7 +21,7 @@ a_gnt_subset: assert property (
     @(posedge clk) disable iff (!rst_n) ((gnt & ~req) == '0)
 );
 
-// 无授权时年龄保持不变
+// 无授权或授权未被消费时年龄保持不变
 a_age_stable: assert property (
-    @(posedge clk) disable iff (!rst_n) !gnt_vld |=> $stable(age)
+    @(posedge clk) disable iff (!rst_n) (!gnt_vld || !upd) |=> $stable(age)
 );

@@ -16,6 +16,7 @@ module arbiter_qrr_checker #(
     logic [N -1:0]  gnt     ;
     logic           gnt_vld ;
     logic           rst_n   ;
+    logic           upd     ;
 
     int exp_ptr;
 
@@ -25,6 +26,7 @@ module arbiter_qrr_checker #(
     ) U_DUT (
         .clk     (clk     ),
         .rst_n   (rst_n   ),
+        .upd     (upd     ),
         .req     (req     ),
         .qos     (QOS     ),
         .gnt     (gnt     ),
@@ -95,6 +97,7 @@ module arbiter_qrr_checker #(
     task automatic apply_reset;
         rst_n = 1'b0;
         req   = '0;
+        upd   = 1'b1;
         repeat (2) @(posedge clk);
         @(negedge clk);
         rst_n = 1'b1;
@@ -230,11 +233,57 @@ module arbiter_qrr_checker #(
         end
     endtask
 
+    // upd=0 时轮询指针冻结、gnt 不切换；upd=1 后恢复推进
+    task automatic hold_test;
+        int held;
+        int sel;
+
+        apply_reset();
+        upd = 1'b0;
+        req = '1;
+
+        @(negedge clk);
+        #1;
+        held = qrr_sel(req, exp_ptr);
+        check_grant(held, "upd-hold-start");
+
+        for (int k = 0; k < 4; k++) begin
+            @(posedge clk);
+            #1;
+            @(negedge clk);
+            req = '1;
+            #1;
+            check_grant(held, "upd-hold");
+        end
+
+        upd = 1'b1;
+        @(posedge clk);
+        #1;
+        exp_ptr = (held == (N - 1)) ? 0 : (held + 1);
+
+        @(negedge clk);
+        req = '1;
+        #1;
+        sel = qrr_sel(req, exp_ptr);
+        check_grant(sel, "upd-resume");
+
+        @(posedge clk);
+        #1;
+        if (sel >= 0) begin
+            exp_ptr = (sel == (N - 1)) ? 0 : (sel + 1);
+        end
+
+        req = '0;
+        upd = 1'b1;
+        #1;
+    endtask
+
     initial begin
         errors = 0;
         done   = 1'b0;
         rst_n  = 1'b0;
         req    = '0;
+        upd    = 1'b1;
         exp_ptr = 0;
         repeat (3) @(posedge clk);
 
@@ -242,6 +291,7 @@ module arbiter_qrr_checker #(
         high_priority_test();
         fallback_test();
         no_req_test();
+        hold_test();
 
         done = 1'b1;
     end

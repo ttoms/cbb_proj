@@ -17,6 +17,7 @@ module arbiter_lru_checker #(
     logic [N -1:0]  gnt     ;
     logic           gnt_vld ;
     logic           rst_n   ;
+    logic           upd     ;
 
     int exp_age [N];
 
@@ -25,6 +26,7 @@ module arbiter_lru_checker #(
     ) U_DUT (
         .clk     (clk    ),
         .rst_n   (rst_n  ),
+        .upd     (upd    ),
         .req     (req    ),
         .gnt     (gnt    ),
         .gnt_vld (gnt_vld)
@@ -59,6 +61,7 @@ module arbiter_lru_checker #(
     task automatic apply_reset;
         rst_n = 1'b0;
         req   = '0;
+        upd   = 1'b1;
         clear_age();
         repeat (2) @(posedge clk);
         @(negedge clk);
@@ -206,17 +209,66 @@ module arbiter_lru_checker #(
         end
     endtask
 
+    // upd=0 时年龄冻结、gnt 不切换；upd=1 后恢复更新
+    task automatic hold_test;
+        int held;
+        int sel;
+
+        apply_reset();
+        upd = 1'b0;
+        req = '1;
+
+        @(negedge clk);
+        #1;
+        held = lru_sel(req);
+        check_grant(held, "upd-hold-start");
+
+        for (int k = 0; k < 4; k++) begin
+            @(posedge clk);
+            #1;
+            @(negedge clk);
+            req = '1;
+            #1;
+            check_grant(held, "upd-hold");
+        end
+
+        upd = 1'b1;
+        @(posedge clk);
+        #1;
+        update_age(held);
+
+        @(negedge clk);
+        req = '1;
+        #1;
+        sel = lru_sel(req);
+        check_grant(sel, "upd-resume");
+        if ((N > 1) && (sel == held)) begin
+            errors++;
+            $display("FAIL: N=%0d upd-resume kept ch%0d (exp another)", N, held);
+        end
+
+        @(posedge clk);
+        #1;
+        update_age(sel);
+
+        req = '0;
+        upd = 1'b1;
+        #1;
+    endtask
+
     initial begin
         errors = 0;
         done   = 1'b0;
         rst_n  = 1'b0;
         req    = '0;
+        upd    = 1'b1;
         repeat (3) @(posedge clk);
 
         random_test(N_RANDOM);
         all_req_test();
         lru_preference_test();
         no_req_test();
+        hold_test();
 
         done = 1'b1;
     end

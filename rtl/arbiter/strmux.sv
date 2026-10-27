@@ -7,6 +7,7 @@
 //   - GRAN_FLIT：逐 flit 重新仲裁
 //   - GRAN_PACKET：hop=1 锁定选通，top=1 释放，packet 内（含 vld 间隙）不切换
 //   - 反压期间锁存选通结果，out_hop/out_top/out_pld 保持稳定，不丢数、不重复
+//   - 仲裁核 upd = 输出握手；GRAN_PACKET 下仅在 packet 头 flit 握手时计一次
 //   - weight / qos 透传给 arbiter_wrapper 对应类型
 // Parameters :
 //   N        - 输入通道数，默认 4，必须 >= 1
@@ -18,7 +19,7 @@
 // Limitations :
 //   - 要求 packet 成对：hop=1 起始、top=1 结束，同一 packet 的 flit 连续来自同一通道
 //   - GRAN_PACKET 锁定期间不响应其他通道；被锁通道违约（中途撤销 vld 或不给 top）会长期占用
-//   - 反压期间仲裁核仍会推进内部指针/credit，长反压后首次授权分布可能偏移
+//   - 反压或 packet 锁定期间仲裁核状态冻结，每个 packet 只推进一次指针
 //   - 不缓存整包，GRAN_PACKET 只锁选通，不锁数据
 //==============================================================================
 module strmux #(
@@ -58,6 +59,7 @@ module strmux #(
     logic           hold_set    ;
     logic           hold_clr    ;
     logic           hold_en     ;
+    logic           arb_upd     ;
 
     assign hold_vld = |hold_oh;
     assign sel_oh   = hold_vld ? hold_oh : gnt;
@@ -67,6 +69,9 @@ module strmux #(
 
     assign sel_hop = |(in_hop & sel_oh);
     assign sel_top = |(in_top & sel_oh);
+
+    // GRAN_FLIT 每 flit 计一次；GRAN_PACKET 只在 packet 头 flit 握手时计一次
+    assign arb_upd = out_vld & out_rdy & ((GRAN == 1'b1) ? sel_hop : 1'b1);
 
     // 反压或 packet 头 flit 触发锁定；GRAN_FLIT 退化为纯反压锁存
     assign set_bp    = out_vld & ~out_rdy & ~hold_vld;
@@ -97,6 +102,7 @@ arbiter_wrapper #(
 ) U_ARB (
     .clk        (clk        ),
     .rst_n      (rst_n      ),
+    .upd        (arb_upd    ),
     .req        (in_vld     ),
     .weight     (weight     ),
     .qos        (qos        ),

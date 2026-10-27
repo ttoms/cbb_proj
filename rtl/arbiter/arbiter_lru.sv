@@ -5,18 +5,21 @@
 // Features :
 //   - 输出独热 gnt，gnt_vld=OR(req)
 //   - 每路维护“距上次授权”的饱和年龄，年龄最大者优先
+//   - 仅当 upd=1（当前 gnt 被使用）时年龄向量更新
 //   - 年龄相同按索引从小到大，复位后从索引 0 开始
 // Parameters :
 //   N - 请求路数，默认 4，必须 >= 1
 // Limitations :
 //   - 年龄计数器饱和后可能出现并列，退化为固定索引优先
 //   - 只记录授权历史，不记录请求到达顺序
+//   - upd 必须与当前 gnt 的消费拍对齐；upd 恒 1 等价于逐拍推进
 //==============================================================================
 module arbiter_lru #(
     parameter   int N   =   4
 ) (
     input   logic           clk     ,
     input   logic           rst_n   ,
+    input   logic           upd     ,
     input   logic [N -1:0]  req     ,
     output  logic [N -1:0]  gnt     ,
     output  logic           gnt_vld
@@ -69,7 +72,7 @@ always_comb begin
     end
 end
 
-assign age_en = gnt_vld;
+assign age_en = gnt_vld & upd;
 
 dffr #(
     .W          (N*AGE_W    ),

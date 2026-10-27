@@ -137,6 +137,7 @@
 统一接口：
 
 - `req[N-1:0]`、`gnt[N-1:0]` 独热，`gnt_vld = |gnt`。
+- `upd`：表示当前 `gnt` 已被消费。状态型仲裁核（RR/WRR/LRU/QRR）仅在 `gnt_vld & upd` 时更新指针/credit/年龄；`ARB_FIXED` 无状态，忽略 `upd`。上层 mux 用输出握手生成该信号，保证“只在被消费时推进”。
 - `weight[N*WEIGHT_W-1:0]` 仅 `ARB_WRR` 使用，其余类型忽略。
 - `qos[N*QOS_W-1:0]` 仅 `ARB_QRR` 使用，其余类型忽略；QoS 数值越大优先级越高，同 QoS 内轮询。
 - `ARB_TYPE` 为 3 bit，elaboration 参数，不是运行期切换；`generate case` 只综合选中的仲裁核。
@@ -167,6 +168,7 @@
 - 未被选中的输入通道 `rdy=0`；无请求时输出 `vld=0`。
 - 反压时不得丢数、不得重复、不得产生假 valid。
 - `ARB_TYPE` 从 mux 参数透传到 `arbiter_wrapper`，只综合选中的仲裁核。
+- `upd` 由 mux 内部生成、不对外暴露：`arbmux` 为 `out_vld & out_rdy`；`strmux` 为 `out_vld & out_rdy & ((GRAN == 1) ? sel_hop : 1)`，`GRAN_PACKET` 下每个 packet 只在包头 flit 被消费时推进一次。
 - `hop/top/rop/vld/rdy/crdt/pld` 的完整位宽与语义后续按链路层接口定义展开；当前 `strmux` 只依赖 `hop/top/vld/rdy/pld`。
 
 ### 7.4 接口、保序与流控模块

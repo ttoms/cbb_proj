@@ -6,12 +6,14 @@
 //   - 输出独热 gnt，gnt_vld=OR(req)
 //   - qos 数值越大优先级越高，只在最高 QoS 请求组内授权
 //   - 同 QoS 通道复用 arbiter_rr 的指针轮询
+//   - 仅当 upd=1（当前 gnt 被使用）时内部轮询指针才推进
 // Parameters :
 //   N     - 请求路数，默认 4，必须 >= 1
 //   QOS_W - 每路 QoS 位宽，默认 2，必须 >= 1
 // Limitations :
 //   - 高 QoS 持续请求时低 QoS 可能饿死，需要严格公平时改用 RR / WRR
 //   - qos 视为静态配置，运行期变化会影响已有轮询指针语义
+//   - upd 必须与当前 gnt 的消费拍对齐；upd 恒 1 等价于逐拍推进
 //==============================================================================
 module arbiter_qrr #(
     parameter   int N       =   4   ,
@@ -19,6 +21,7 @@ module arbiter_qrr #(
 ) (
     input   logic                   clk     ,
     input   logic                   rst_n   ,
+    input   logic                   upd     ,
     input   logic [N       -1:0]    req     ,
     input   logic [N*QOS_W -1:0]    qos     ,
     output  logic [N       -1:0]    gnt     ,
@@ -56,6 +59,7 @@ arbiter_rr #(
 ) U_RR (
     .clk        (clk        ),
     .rst_n      (rst_n      ),
+    .upd        (upd        ),
     .req        (req_hi     ),
     .gnt        (gnt        ),
     .gnt_vld    (gnt_vld    )

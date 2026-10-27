@@ -22,6 +22,7 @@ module arbiter_wrapper_checker #(
     localparam logic [2:0] T_QRR   = 3'b100;
 
     logic                   rst_n   ;
+    logic                   upd     ;
     logic [N -1:0]          req     ;
     logic [N -1:0]          gnt     ;
     logic                   gnt_vld ;
@@ -42,6 +43,7 @@ module arbiter_wrapper_checker #(
     ) U_DUT (
         .clk     (clk     ),
         .rst_n   (rst_n   ),
+        .upd     (upd     ),
         .req     (req     ),
         .weight  (weight  ),
         .qos     (qos     ),
@@ -68,6 +70,7 @@ module arbiter_wrapper_checker #(
                 ) U_REF (
                     .clk     (clk         ),
                     .rst_n   (rst_n       ),
+                    .upd     (upd         ),
                     .req     (req         ),
                     .gnt     (ref_gnt     ),
                     .gnt_vld (ref_gnt_vld )
@@ -81,6 +84,7 @@ module arbiter_wrapper_checker #(
                 ) U_REF (
                     .clk     (clk         ),
                     .rst_n   (rst_n       ),
+                    .upd     (upd         ),
                     .req     (req         ),
                     .weight  (weight      ),
                     .gnt     (ref_gnt     ),
@@ -94,6 +98,7 @@ module arbiter_wrapper_checker #(
                 ) U_REF (
                     .clk     (clk         ),
                     .rst_n   (rst_n       ),
+                    .upd     (upd         ),
                     .req     (req         ),
                     .gnt     (ref_gnt     ),
                     .gnt_vld (ref_gnt_vld )
@@ -107,6 +112,7 @@ module arbiter_wrapper_checker #(
                 ) U_REF (
                     .clk     (clk         ),
                     .rst_n   (rst_n       ),
+                    .upd     (upd         ),
                     .req     (req         ),
                     .qos     (qos         ),
                     .gnt     (ref_gnt     ),
@@ -124,6 +130,7 @@ module arbiter_wrapper_checker #(
     task automatic apply_reset;
         rst_n = 1'b0;
         req   = '0;
+        upd   = 1'b1;
         repeat (2) @(posedge clk);
         @(negedge clk);
         rst_n = 1'b1;
@@ -149,12 +156,15 @@ module arbiter_wrapper_checker #(
         for (int k = 0; k < cycles; k++) begin
             @(negedge clk);
             req = N'($urandom) & ((N'($urandom_range(0, 99)) < 70) ? {N{1'b1}} : '0);
+            // upd 随机，验证 wrapper 透传：DUT 与参考核必须逐拍一致
+            upd = ($urandom_range(0, 1) == 1);
             #1;
             check_grant("random");
             @(posedge clk);
             #1;
         end
 
+        upd = 1'b1;
         req = '0;
         #1;
     endtask
@@ -193,6 +203,7 @@ module arbiter_wrapper_checker #(
         done   = 1'b0;
         rst_n  = 1'b0;
         req    = '0;
+        upd    = 1'b1;
         repeat (3) @(posedge clk);
 
         random_test(N_RANDOM);
