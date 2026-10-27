@@ -1,0 +1,15 @@
+# 仿真与构建产物
+build/
+simv
+*.vcd
+*.fst
+*.fsdb
+obj_dir/
+
+# Python
+__pycache__/
+*.pyc
+
+# 编辑器 / 系统
+.DS_Store
+*.swp
