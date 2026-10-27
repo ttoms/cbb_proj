@@ -2,7 +2,7 @@
 
 可复用数字 IC 公共构建模块（CBB）库，开发基线来自 `my_env` 仓库的 `rtl-developer` skill。
 
-当前为**初版目录框架**：已建立分类目录、开发流程、质量门控脚本和待开发清单，尚未包含自研 CBB 实现。基础件可先参考 `my_env/skills/rtl-developer/templates/`。
+当前已完成**首批 14 项 CBB**（P0 基础件 4 项 + P1 简单件 10 项），全部通过质量门控与定向仿真；第二批复杂件待启动。
 
 ## 目录框架
 
@@ -54,9 +54,9 @@ cbb_proj/
 - 文档与 RTL 同一次变更提交；端口/参数不一致或文档过期，不得标记为“已发布”。
 - 模板：[简单件](docs/cbb/_template_simple.md) / [复杂件](docs/cbb/_template.md)；章节规则：[CBB 文档规范](docs/cbb/README.md)。
 
-## 首批目标
+## 首批目标（已完成）
 
-P0 4 项 + P1 10 个简单件，共 14 项（CDC 不进入首批）：
+P0 4 项 + P1 10 个简单件，共 14 项（CDC 不进入首批），均已发布：
 
 - P0 收编：`dff`、`dffr`、`rst_sync`、`fifo_sync`
 - P1 开发：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`
