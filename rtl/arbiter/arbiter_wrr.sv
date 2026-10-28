@@ -30,6 +30,8 @@ module arbiter_wrr #(
 );
 
     localparam int IDX_W = (N > 1) ? $clog2(N) : 1;
+    localparam int SUM_W = IDX_W + 1;
+    localparam logic [SUM_W-1:0] N_LIMIT = SUM_W'(N);
 
     logic [N*WEIGHT_W -1:0] credit      ;
     logic [N*WEIGHT_W -1:0] nxt_credit  ;
@@ -47,6 +49,7 @@ module arbiter_wrr #(
 always_comb begin
     logic [WEIGHT_W -1:0] cred_i;
     logic [WEIGHT_W -1:0] base_i;
+    logic [SUM_W    -1:0] sum;
 
     req_w      = '0;
     has_credit = '0;
@@ -71,7 +74,9 @@ always_comb begin
     end
 
     for (int i = 0; i < N; i++) begin
-        idx = IDX_W'((int'(ptr) + i) % N);
+        // 窄位回绕：ptr + i 在 SUM_W 位内，减一次 N 即可，避免 32 位取模
+        sum = {1'b0, ptr} + SUM_W'(i);
+        idx = IDX_W'(sum >= N_LIMIT ? (sum - N_LIMIT) : sum);
         if (!gnt_vld && elig[idx]) begin
             gnt[idx] = 1'b1;
             gnt_vld  = 1'b1;

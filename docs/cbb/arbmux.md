@@ -122,11 +122,11 @@ arbmux #(
 ```
 
 - **数据流**：
-  - 请求分发：`in_vld` 直接作为仲裁请求进入 `U_ARB`，不因反压而屏蔽；`weight` / `qos` 透传；`upd` 由输出握手 `out_vld & out_rdy` 生成。
+  - 请求分发：无锁存时 `in_vld` 进入 `U_ARB`；锁存时只把 `hold_oh` 作为 `arb_req` 喂给仲裁核，保证 `upd` 推进的是实际被服务的通道；`weight` / `qos` 透传；`upd` 由输出握手 `out_vld & out_rdy` 生成。
   - 选择：无锁存时用 `gnt`；有锁存时用 `hold_oh`，忽略仲裁核当拍授权。
   - 输出有效：无锁存时等价于 `gnt_vld`（有合法授权）；有锁存时要求被锁存通道的 `in_vld` 仍有效。
   - 反压：`in_rdy` 只在 `out_vld & out_rdy` 的握手拍对 `sel_oh` 置位，未选中通道恒为 0。
-  - 负载：按 `sel_oh` 做独热 mux，取 `in_pld` 对应切片；`sel_oh` 默认 0 时 `out_pld=0`。
+  - 负载：按 `sel_oh` 做独热掩码 OR，取 `in_pld` 对应切片；`sel_oh` 默认 0 时 `out_pld=0`。
 - **关键寄存器/存储体**：
 
 | 名称 | 用途 | 复位 | 更新条件（en） |
@@ -166,7 +166,7 @@ arbmux #(
 
 - **关键路径/流水线**：`in_vld → arbiter_wrapper（组合仲裁）→ sel_oh → out_vld/in_rdy/out_pld`。无反压时单级组合；反压时经 `hold_oh` 旁路仲裁核，缩短释放拍组合路径。
 - **反压路径**：`out_rdy → in_rdy` 为组合；`out_rdy` 参与 `hold_set/hold_clr`，只影响 `U_HOLD` 的 en/d，不组合回灌仲裁核。
-- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热 mux + `in_rdy` 与门；无额外 flit 存储。反压期间仲裁核 `upd=0`、状态不翻转，功耗低于“持续推进”方案。
+- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热掩码 OR + `in_rdy` 与门；无额外 flit 存储。反压期间仲裁核 `upd=0`、状态不翻转，功耗低于“持续推进”方案。
 - **取舍**：选择“只锁选通、不锁数据”，面积最小，代价是要求源端严格遵守 valid-ready；`upd` 让仲裁核只在消费拍推进，反压期间状态冻结，行为可预测。
 
 ## 12. 风险与未覆盖项 [C]

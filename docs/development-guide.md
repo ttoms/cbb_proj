@@ -69,6 +69,7 @@ cbb_proj/
 - 模块头注释必须含 `Module / Description / Features / Parameters / Limitations`。
 - `valid` 与 `data` 同周期；`vld` 不依赖 `rdy`。
 - 组合逻辑用 `always_comb` + 默认值；`case` 必须有 `default`。
+- 寄存器阵列用 packed 二维数组（`logic [DEPTH-1:0][W-1:0]`）；写使能优先用独热掩码，不要每项一个比较器。
 - 禁止 `initial` / `force` / `#delay` / `casex` / `always @(...)` / `always_latch`。
 - **latch 唯一例外**：`icg` 行为模型可在 `always_latch` 同行加 `// gate: allow-latch`，`quality_gate.py` 行级跳过。
 - 模块 `.sv` 内不写断言；需要时建 `sva/<category>/<module>.sva`，用 `` `ifdef SVA_ON `` include；仿真/断言编译加 `-I sva/<category>`。

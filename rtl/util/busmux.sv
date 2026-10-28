@@ -25,13 +25,12 @@ logic sel_ohot;
 
 assign sel_ohot = (sel != '0) && ((sel & (sel - 1'b1)) == '0);
 
+// 独热选择：用掩码 OR（平衡逻辑），不要写成优先级 if 链
 always_comb begin
     data_out = '0;
     vld      = sel_ohot;
     for (int i = 0; i < N; i++) begin
-        if (sel_ohot && sel[i]) begin
-            data_out = data[i];
-        end
+        data_out |= data[i] & {W{sel_ohot && sel[i]}};
     end
 end
 

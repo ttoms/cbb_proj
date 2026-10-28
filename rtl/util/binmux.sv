@@ -21,10 +21,13 @@ module binmux #(
     output  logic                                       vld
 );
 
+localparam int SEL_W = (N > 1) ? $clog2(N) : 1;
+localparam logic [SEL_W:0] N_LIMIT = (SEL_W+1)'(N);
+
 always_comb begin
     data_out = '0;
     vld      = 1'b0;
-    if (int'(sel) < N) begin
+    if ({1'b0, sel} < N_LIMIT) begin
         data_out = data[sel];
         vld      = 1'b1;
     end

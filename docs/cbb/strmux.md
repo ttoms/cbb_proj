@@ -195,16 +195,16 @@ strmux #(
 
 - **关键路径/流水线**：`in_vld → arbiter_wrapper（组合仲裁）→ sel_oh → out_vld/out_hop/out_top/in_rdy/out_pld`。无反压时单级组合；反压/packet 锁定后经 `hold_oh` 旁路仲裁核。
 - **反压路径**：`out_rdy → in_rdy` 为组合；`out_rdy` 只影响 `U_HOLD` 的 en/d，不组合回灌仲裁核。
-- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热 mux + 2 位 hop/top 独热 mux + `in_rdy` 与门；相对 `arbmux` 只多 `hop` / `top` 两路归约与 mux。无额外 flit 存储。反压与 packet 锁定期间 `upd=0`、仲裁核状态不翻转，功耗低于“持续推进”方案。
+- **面积/功耗**：面积 = 选中仲裁核 + `N` 位 `dffr` + `PLD_W` 位独热掩码 OR + `hop` / `top` 两路归约 + `in_rdy` 与门；相对 `arbmux` 只多 `hop` / `top` 两路归约。无额外 flit 存储。反压与 packet 锁定期间 `upd=0`、仲裁核状态不翻转，功耗低于“持续推进”方案。
 - **取舍**：选择“只锁选通、不锁数据、按消费计费”，面积与控制路径最简；代价是要求源端严格遵守 valid-ready 与 packet 连续性。`GRAN=1` 下每 packet 只计一次仲裁，WRR credit 按 packet 而非 flit 扣减。
 
 ## 12. 风险与未覆盖项 [C]
 - **风险**：源端违反 valid-ready（反压期间撤销 `in_vld` 或改 `in_*`）会导致丢数或字段错配，模块内无检测。
 - **风险**：`GRAN=1` 下 packet 中途断流且不给 `top`，锁存无法释放，输出长期被占用。
-- **风险**：`upd` 在消费拍生成，而消费通道可能由 `hold_oh` 决定；`GRAN=0` 反压锁存期间仲裁核的 `gnt` 可能随请求变化而与 `hold_oh` 不同，释放拍按 `gnt` 推进一次，恢复后的指针以仲裁核当时授权为准。严格公平性场景需评估该行为。
+- **风险**：锁存期间仲裁核只看到被锁通道（`arb_req = hold_oh`），释放拍按 `hold_oh` 对应的授权推进一次；新出现的其他请求不会影响本次记账。
 - **风险**：`GRAN=1` 只在包头 flit（`sel_hop=1`）消费时计一次仲裁；包头标记异常（缺失或错位）会改变每 packet 的计费次数。模块不做 packet 合法性检查，依赖源端保证 `hop`/`top` 成对。
 - **限制**：单时钟；不做 packet 合法性检查；`ARB_TYPE` 不可运行期切换；未选中通道在锁定期间拿不到 `in_rdy`。
-- **未覆盖项**：`N > 8`、`GRAN=0` 下的 WRR/LRU/QRR、`PLD_W=1`、`in_*` 为 X/Z、非法源端时序、`GRAN=0` 锁存期间 `gnt` 与 `hold_oh` 不一致时的公平性偏移量化、门级仿真与综合时序/面积、形式化验证。
+- **未覆盖项**：`N > 8`、`GRAN=0` 下的 WRR/LRU/QRR、`PLD_W=1`、`in_*` 为 X/Z、非法源端时序、门级仿真与综合时序/面积、形式化验证。
 
 ## 13. 版本记录 [M]
 | 版本 | 日期 | 变更 | 兼容性 |

@@ -66,12 +66,11 @@ module arbmux #(
     assign hold_en  = hold_set | hold_clr;
     assign nxt_hold_oh = hold_clr ? '0 : (hold_set ? gnt : hold_oh);
 
+// sel_oh 为独热：用掩码 OR（平衡逻辑），不要写成优先级 if 链
 always_comb begin
     out_pld = '0;
     for (int i = 0; i < N; i++) begin
-        if (sel_oh[i]) begin
-            out_pld = in_pld[i*PLD_W +: PLD_W];
-        end
+        out_pld |= in_pld[i*PLD_W +: PLD_W] & {PLD_W{sel_oh[i]}};
     end
 end
 

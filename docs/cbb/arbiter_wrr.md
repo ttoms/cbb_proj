@@ -125,7 +125,7 @@ arbiter_wrr #(
 | `credit[N*WEIGHT_W]` | 每路本轮剩余授权额度 | `dffr` 复位 0 | `gnt_vld & upd` |
 | `ptr` | 同权重扫描起始索引 | `dffr` 复位 0 | `gnt_vld & upd` |
 
-- **关键设计决策**：用 credit 计数而不是展开权重队列，面积随 `N*WEIGHT_W` 线性增长；`no_credit` 在同拍完成重装，避免每轮空一拍；`credit` 只在授权时更新，空闲时 `en=0` 可被门控。权重为扁平分包，便于 `arbiter_wrapper` 直接透传。
+- **关键设计决策**：用 credit 计数而不是展开权重队列，面积随 `N*WEIGHT_W` 线性增长；`no_credit` 在同拍完成重装，避免每轮空一拍；`credit` 只在授权时更新，空闲时 `en=0` 可被门控。权重为扁平分包，便于 `arbiter_wrapper` 直接透传。扫描索引 `ptr + i` 用 `SUM_W = IDX_W + 1` 位窄回绕，不做 32 位取模。
 
 ## 10. 状态机 [C]
 不适用。模块只有 `ptr` 和 `credit` 两组寄存器，没有多步控制序列；轮次边界由组合 `no_credit` 判定，不引入 FSM 状态编码。

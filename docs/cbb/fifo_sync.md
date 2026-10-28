@@ -92,29 +92,29 @@ fifo_sync #(
 ```text
              +--------------------------------------------------+
   wr_data -->| gen_mem[i].U_MEM : dff[DATA_W]                   |
-  wr_vld  -->|   en = wr_en && (wr_ptr == i)                     |----> rd_data
+  wr_vld  -->|   en = wr_en && wr_oh[i]                          |----> rd_data
   wr_rdy  <--|                                                  |   (mem[rd_ptr] 组合选择)
              | U_WR_PTR : dffr[PTR_W]  en=wr_en                 |
              | U_RD_PTR : dffr[PTR_W]  en=rd_en                 |
   rd_vld  <--| U_ENTRY_VLD : dffr[DEPTH] en=(wr_en | rd_en)     |
-  rd_rdy  -->|   nxt_entry_vld: rd_en 清位 / wr_en 置位          |
+  rd_rdy  -->|   nxt_entry_vld = (entry & ~rd_mask) | wr_mask     |
              |                                                  |
   full    <--| &entry_vld                                       |
   empty   <--| ~|entry_vld                                      |
              +--------------------------------------------------+
 ```
 
-- **数据流**：写侧在 `wr_en` 时把 `wr_data` 写入 `mem[wr_ptr]`，同时置位 `entry_vld[wr_ptr]` 并推进 `wr_ptr`；读侧 `rd_data` 组合选择 `mem[rd_ptr]`，`rd_en` 时清 `entry_vld[rd_ptr]` 并推进 `rd_ptr`。`entry_vld` 的更新在一个 `always_comb` 中先默认保持，再按 `rd_en` 清位、`wr_en` 置位。
+- **数据流**：写侧在 `wr_en` 时把 `wr_data` 写入 `mem[wr_ptr]`（`mem` 是 packed 二维数组 `[DEPTH-1:0][DATA_W-1:0]`），同时置位 `entry_vld[wr_ptr]` 并推进 `wr_ptr`；读侧 `rd_data` 组合选择 `mem[rd_ptr]`，`rd_en` 时清 `entry_vld[rd_ptr]` 并推进 `rd_ptr`。`entry_vld` 的更新用独热掩码：`(entry_vld & ~rd_mask) | wr_mask`，同拍命中同一项时写优先；`wr_mask` / `rd_mask` 由 `1 << ptr` 生成，避免每项一个比较器。
 - **关键寄存器/存储体**：
 
 | 名称 | 用途 | 复位 | 更新条件（en） |
 |---|---|---|---|
-| `mem` | 数据存储体 `DEPTH x DATA_W` | 不复位（`dff`） | 每项 `wr_en && (wr_ptr == i)` |
+| `mem` | 数据存储体，packed `[DEPTH-1:0][DATA_W-1:0]` | 不复位（`dff`） | 每项 `wr_en && wr_oh[i]` |
 | `entry_vld` | 每项有效位 | 复位为 0（`dffr`） | `wr_en \| rd_en` |
 | `wr_ptr` | 写指针 | 复位为 0（`dffr`） | `wr_en` |
 | `rd_ptr` | 读指针 | 复位为 0（`dffr`） | `rd_en` |
 
-- **关键设计决策**：用 `entry_vld` 有效位向量直接译码 `full` / `empty`，省去独立计数器及其比较逻辑，同时保持 `DEPTH` 位宽整体门控；`DEPTH` 限制为 2 的幂，指针自然回绕；读采用 show-ahead，读延迟 0 拍。`rd_ptr` 与 `wr_ptr` 指向同一条目只可能发生在全满（此时 `wr_rdy=0` 禁止写）或全空（此时 `rd_vld=0` 禁止读），因此不存在同拍同地址读写冲突；`nxt_entry_vld` 中先清后置，保证万一同拍命中同一项时写入优先。
+- **关键设计决策**：用 `entry_vld` 有效位向量直接译码 `full` / `empty`，省去独立计数器及其比较逻辑，同时保持 `DEPTH` 位宽整体门控；`DEPTH` 限制为 2 的幂，指针自然回绕；读采用 show-ahead，读延迟 0 拍。`rd_ptr` 与 `wr_ptr` 指向同一条目只可能发生在全满（此时 `wr_rdy=0` 禁止写）或全空（此时 `rd_vld=0` 禁止读），因此不存在同拍同地址读写冲突；`nxt_entry_vld` 用独热掩码组合，保证万一同拍命中同一项时写入优先。
 
 ## 10. 状态机 [C]
 不适用。模块是纯数据流结构，没有多步控制序列；`full` / `empty` 由 `entry_vld` 直接译码，指针只在握手成立时推进，不需要 FSM，也不存在非法状态编码。
