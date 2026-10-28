@@ -13,7 +13,7 @@
 | P2 数据通路、接口与保序 | 11 | 同步 FIFO 增强、位宽转换、CRC/编码、接口适配、流整形、链表/ID 池 |
 | P3 总线与外设 | 11 | APB/AXI-Lite、UART/SPI/I2C、Timer/IRQ |
 | P4 CDC（最低优先级，无需求不启动） | 5 | 单时钟项目，CDC 同步/异步 FIFO 无需求不启动 |
-| **合计** | **50** | 26 项已发布（首批 14 + 二批 9 + 三批 3），1 项模板已有，23 项待实施 |
+| **合计** | **50** | 30 项已发布（首批 14 + 二批 9 + 三批 3 + 四批 4），1 项模板已有，19 项待实施 |
 
 > `skid_buffer` 已合并到 `reg_slice` 的 `RS_BACKWARD` 模式，不再单独开发 RTL，见 §10。
 
@@ -21,6 +21,7 @@
 
 - 首批 P1 简单件：`counter`、`edge_det`、`pulse_stretch`、`debounce`、`icg`、`bin2ohot`、`ohot2bin`、`busmux`、`binmux`、`arbiter_pri`。
 - 第二批复杂件：`reg_slice`、`arbiter_rr`、`arbiter_wrr`、`arbiter_lru`、`arbiter_qrr`、`arbiter_wrapper`、`clkgate`、`arbmux`、`strmux`（已完成）。
+- 第四批数据通路/流控/校验：`fifo_sync_af`、`width_conv`、`flow_shaper`、`crc`（已完成）。
 - CDC 全部保持 P4，不进入首批；单时钟项目，无需求不启动。
 
 ## 2. P0：基础件收编（首批，已发布）
@@ -62,12 +63,12 @@
 
 | ID | 模块名 | 目录 | 功能 | 复杂度 | 依赖 | 状态 | 关键验收点 |
 |---|---|---|---|---|---|---|---|
-| CBB-MEM-002 | `fifo_sync_af` | `rtl/memory` | 同步 FIFO + almost_full/empty | 复杂 | `fifo_sync` | 待架构 | 阈值边界、阈值参数校验、组合/寄存输出 |
-| CBB-STREAM-003 | `width_conv` | `rtl/stream` | 位宽转换（窄↔宽） | 复杂 | `fifo_sync` / `reg_slice` | 待架构 | 非整数倍、尾包、背靠背 |
+| CBB-MEM-002 | `fifo_sync_af` | `rtl/memory` | 同步 FIFO + almost_full/empty | 复杂 | `fifo_sync` | 已发布 | 阈值边界、阈值参数校验、寄存输出 |
+| CBB-STREAM-003 | `width_conv` | `rtl/stream` | 位宽转换（窄↔宽） | 复杂 | `fifo_sync` / `reg_slice` | 已发布 | 整数倍位宽比、keep/last 尾包、背靠背、随机反压 |
 | CBB-STREAM-004 | `intf_rx` | `rtl/stream` | 链路接口接收侧适配/解码 | 复杂 | - | 待架构 | `hop/top/rop/vld/rdy/crdt/pld` 接口映射、背压、packet 边界、复位 |
 | CBB-STREAM-005 | `intf_tx` | `rtl/stream` | 链路接口发送侧适配/编码 | 复杂 | - | 待架构 | 接口映射、credit/rdy、packet 边界、不丢数/不重复 |
-| CBB-STREAM-006 | `flow_shaper` | `rtl/stream` | 流级流量整形/速率控制 | 复杂 | `counter` | 待架构 | 令牌桶速率/突发、反压不丢包、参数越界、复位 |
-| CBB-UTIL-001 | `crc` | `rtl/util` | 参数化 CRC 生成/校验 | 复杂 | `dff` | 待架构 | 标准多项式、位序、初值/异或、逐位/并行 |
+| CBB-STREAM-006 | `flow_shaper` | `rtl/stream` | 流级流量整形/速率控制 | 复杂 | `counter` | 已发布 | 令牌桶速率/突发、反压不丢包、参数越界、复位 |
+| CBB-UTIL-001 | `crc` | `rtl/util` | 参数化 CRC 生成/校验 | 复杂 | `dff` | 已发布 | 标准多项式、位序、初值/异或、逐位/并行 |
 | CBB-UTIL-002 | `ohot_pri_enc` | `rtl/util` | 优先编码器，取最低索引有效位 | 简单 | - | 已发布 | 全零、多热、位宽边界 |
 | CBB-UTIL-003 | `gray_conv` | `rtl/util` | 二进制 ↔ 格雷码转换 | 简单 | - | 已发布 | 位宽边界、往返一致 |
 | CBB-UTIL-004 | `parity` | `rtl/util` | 奇偶校验生成/检查 | 简单 | - | 已发布 | 奇/偶模式、位宽 1 |

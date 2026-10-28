@@ -80,3 +80,7 @@
 | `arbmux` | CBB-ARB-007 | [`arbmux.md`](arbmux.md) | 复杂件 |
 | `strmux` | CBB-ARB-008 | [`strmux.md`](strmux.md) | 复杂件 |
 | `reg_slice` | CBB-STREAM-002 | [`reg_slice.md`](reg_slice.md) | 复杂件 |
+| `fifo_sync_af` | CBB-MEM-002 | [`fifo_sync_af.md`](fifo_sync_af.md) | 复杂件 |
+| `width_conv` | CBB-STREAM-003 | [`width_conv.md`](width_conv.md) | 复杂件 |
+| `flow_shaper` | CBB-STREAM-006 | [`flow_shaper.md`](flow_shaper.md) | 复杂件 |
+| `crc` | CBB-UTIL-001 | [`crc.md`](crc.md) | 复杂件 |
