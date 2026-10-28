@@ -24,7 +24,7 @@
 
 ## 5. 使用说明
 - **时钟/复位/初始化**：纯组合逻辑，无时钟和复位。
-- **延迟/吞吐**：组合延迟；每拍最多一个授权。
+- **延迟/吞吐**：组合树延迟，深度 `log2(N)`；每拍最多一个授权。
 - **反压/握手**：无；授权方需自行保证被授权请求仍有效。
 
 ```systemverilog
@@ -45,7 +45,7 @@ arbiter_pri #(
 | 项 | 结果 |
 |---|---|
 | `quality_gate.py` | 0 error（PASSED） |
-| 定向 TB | `tb/arbiter/arbiter_pri_tb.sv` PASS（N=4：无请求、四路单请求、两两组合的索引优先级、全请求） |
+| 定向 TB | `tb/arbiter/arbiter_pri_tb.sv` PASS（N=4：无请求、四路单请求、两两组合的索引优先级、全请求）；`tb/arbiter/arbiter_scale_tb.sv` 覆盖 `N=64/128` |
 | SVA | `arbiter_pri.sva` 参数检查；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x |
-| 未覆盖项 | 未覆盖 `N=1` / `N>4`；未做综合面积与时序评估 |
+| 未覆盖项 | `req` 为 X/Z 的行为；未做综合面积与时序评估 |

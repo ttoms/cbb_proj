@@ -30,7 +30,7 @@
 | CBB-BASIC-001 | `dff` | `rtl/basic` | 无复位数据通路寄存器，显式 `en` | 简单 | - | 已发布 | 编译 + 自检 + 对齐；作为数据通路默认单元 |
 | CBB-BASIC-002 | `dffr` | `rtl/basic` | 异步复位控制寄存器，显式 `en` | 简单 | - | 已发布 | 复位值常量、复位释放由 `rst_sync` 保证 |
 | CBB-BASIC-003 | `rst_sync` | `rtl/basic` | 异步复位、同步释放 | 简单 | `dffr` | 已发布 | 复位释放无亚稳态；含参数检查 SVA |
-| CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready） | 复杂 | `dff` / `dffr` | 已发布 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
+| CBB-MEM-001 | `fifo_sync` | `rtl/memory` | 同步 FIFO（valid-ready，full/empty 寄存输出） | 复杂 | `dff` / `dffr` / `bin2ohot` | 已发布 | 满/空、指针回绕、同时读写、`DEPTH=2` 边界 |
 
 > 收编动作：实现开始时按简单/复杂件复制对应模板为 `docs/cbb/<module>.md`，补全端口/参数/使用说明（复杂件补齐微架构/数据流/状态机等章节），完成验收后更新本清单状态为“已发布”。首批 14 项均已完成并发布。
 
@@ -48,11 +48,11 @@
 | CBB-UTIL-006 | `ohot2bin` | `rtl/util` | 独热 → 二进制转换 | 简单 | - | 已发布 | 首批 | 单热、全零、多热行为、位宽边界 |
 | CBB-UTIL-007 | `busmux` | `rtl/util` | 独热选择信号的数据 mux | 简单 | - | 已发布 | 首批 | 单热、无选择、多热行为、数据位宽 |
 | CBB-UTIL-008 | `binmux` | `rtl/util` | 二进制选择信号的数据 mux | 简单 | - | 已发布 | 首批 | 选择越界、无选择、位宽、组合延迟 |
-| CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核 | 简单 | - | 已发布 | 首批 | 无请求、全请求、优先级语义明确 |
-| CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核 | 复杂 | `dffr` | 已发布 | 二批 | 指针回绕、单请求、全请求、公平性 |
-| CBB-ARB-003 | `arbiter_wrr` | `rtl/arbiter` | 加权轮询仲裁核 | 复杂 | `dffr` | 已发布 | 二批 | 权重边界、零权重、公平带宽、无饿死 |
-| CBB-ARB-004 | `arbiter_lru` | `rtl/arbiter` | 最近最少使用仲裁核 | 复杂 | `dffr` | 已发布 | 二批 | 历史更新、连续请求、无饿死、复位 |
-| CBB-ARB-005 | `arbiter_qrr` | `rtl/arbiter` | QoS + 轮询仲裁核 | 复杂 | `arbiter_rr` | 已发布 | 二批 | QoS 分组、同 QoS 轮询、高 QoS 优先、低 QoS 饿死说明 |
+| CBB-ARB-001 | `arbiter_pri` | `rtl/arbiter` | 固定优先级仲裁核（树形） | 简单 | `pri_tree` | 已发布 | 首批 | 无请求、全请求、优先级语义明确 |
+| CBB-ARB-002 | `arbiter_rr` | `rtl/arbiter` | 轮询仲裁核（one-hot 指针 + 树） | 复杂 | `dffr` / `pri_tree` | 已发布 | 二批 | 指针回绕、单请求、全请求、公平性 |
+| CBB-ARB-003 | `arbiter_wrr` | `rtl/arbiter` | 加权轮询仲裁核（内部 arbiter_rr） | 复杂 | `dffr` / `arbiter_rr` | 已发布 | 二批 | 权重边界、零权重、公平带宽、无饿死 |
+| CBB-ARB-004 | `arbiter_lru` | `rtl/arbiter` | 最近最少使用仲裁核（max_tree） | 复杂 | `dffr` / `max_tree` | 已发布 | 二批 | 历史更新、连续请求、无饿死、复位 |
+| CBB-ARB-005 | `arbiter_qrr` | `rtl/arbiter` | QoS + 轮询仲裁核（max_tree + arbiter_rr） | 复杂 | `arbiter_rr` / `max_tree` | 已发布 | 二批 | QoS 分组、同 QoS 轮询、高 QoS 优先、低 QoS 饿死说明 |
 | CBB-ARB-006 | `arbiter_wrapper` | `rtl/arbiter` | 仲裁器统一封装，`ARB_TYPE` 选择仲裁核 | 复杂 | `arbiter_pri` / `arbiter_rr` / `arbiter_wrr` / `arbiter_lru` / `arbiter_qrr` | 已发布 | 二批 | 五种 `ARB_TYPE` 分支、统一端口、非法类型锁零/SVA 报错 |
 | CBB-ARB-007 | `arbmux` | `rtl/arbiter` | flit 级选通 mux，内部集成 `arbiter_wrapper` | 复杂 | `arbiter_wrapper` | 已发布 | 二批 | flit 粒度仲裁、选中通道 `rdy`、不丢数/不重复、各 `ARB_TYPE` 分支 |
 | CBB-ARB-008 | `strmux` | `rtl/arbiter` | stream 级选通 mux，内部集成 `arbiter_wrapper`，`GRAN` 选择 flit/packet 粒度 | 复杂 | `arbiter_wrapper` | 已发布 | 二批 | `hop/top/vld/rdy/pld` 接口、flit/packet 粒度、packet 内不切换、各 `ARB_TYPE` 分支 |
@@ -125,6 +125,8 @@
 ### 7.2 仲裁器家族与 `arbiter_wrapper`
 
 所有仲裁核统一命名为 `arbiter_*`，统一封装为 `arbiter_wrapper`。仲裁核保持独立、单一职责；`arbiter_wrapper` 只做参数选择和端口统一，不复制仲裁算法。
+
+仲裁核内部使用 `pri_tree`（固定优先级树）、`max_tree`（树形最大值）和 `suf_or`（后缀 OR 树）helper，均不单独发布。组合深度 `O(log N)`，支持 `N=64/128`；`upd` 表示当前授权被消费，指针/credit/age 只在消费拍推进。
 
 | `ARB_TYPE` | 编码 | 仲裁核 | 语义 |
 |---|---:|---|---|

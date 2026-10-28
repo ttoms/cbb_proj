@@ -1,17 +1,18 @@
 `default_nettype none
 //==============================================================================
 // Module : arbiter_rr
-// Description : 轮询仲裁，从 ptr 指向的索引开始扫描，长期公平
+// Description : 轮询仲裁，one-hot 指针 + 双 pri_tree，O(log N) 组合深度
 // Features :
 //   - 输出独热 gnt，gnt_vld=OR(req)
-//   - 无请求时 gnt=0、gnt_vld=0，ptr 保持
-//   - 仅当 upd=1（当前 gnt 被使用）时 ptr 才指向被授权索引的下一路
+//   - 无请求时 gnt=0、gnt_vld=0，指针保持
+//   - 仅当 upd=1（当前 gnt 被使用）时指针指向被授权索引的下一路
+//   - 指针为 one-hot，后缀 OR 生成"低于指针"掩码，不使用取模
 // Parameters :
 //   N - 请求路数，默认 4，必须 >= 1
 // Limitations :
 //   - gnt 为组合输出，授权方需保证请求在握手周期内有效
 //   - upd 必须与当前 gnt 的消费拍对齐；upd 恒 1 等价于逐拍推进
-//   - 同一索引持续独占时，其余请求最多等待 N-1 次授权
+//   - 指针寄存器为 N 位 one-hot，面积随 N 线性增长
 //==============================================================================
 module arbiter_rr #(
     parameter   int N   =   4
@@ -24,49 +25,61 @@ module arbiter_rr #(
     output  logic           gnt_vld
 );
 
-    localparam int IDX_W = (N > 1) ? $clog2(N) : 1;
-    localparam int SUM_W = IDX_W + 1;
-    localparam logic [SUM_W-1:0] N_LIMIT = SUM_W'(N);
+    localparam int LOGN = (N > 1) ? $clog2(N) : 1;
+    localparam logic [N-1:0] PTR_RESET = N'(1);
 
-    logic [IDX_W -1:0]  ptr     ;
-    logic [IDX_W -1:0]  gnt_idx ;
-    logic [IDX_W -1:0]  nxt_ptr ;
-    logic [IDX_W -1:0]  idx     ;
-    logic               ptr_en  ;
+    logic [N -1:0]  ptr         ;   // one-hot
+    logic [N -1:0]  lower_mask  ;   // 低于 ptr 的通道
+    logic [N -1:0]  req_hi      ;
+    logic [N -1:0]  req_lo      ;
+    logic [N -1:0]  gnt_hi      ;
+    logic [N -1:0]  gnt_lo      ;
+    logic [N -1:0]  nxt_ptr     ;
+    logic           ptr_en      ;
+    logic [N -1:0]  suf         ;   // 后缀 OR：suf[i] = |ptr[i:N-1]
 
-always_comb begin
-    logic [SUM_W-1:0] sum;
+    // 低于 ptr 的通道；ptr 的下一路及其后由 req_hi 覆盖
+    suf_or #(
+        .N      (N      ),
+        .LEVELS (LOGN   )
+    ) U_SUF (
+        .v      (ptr    ),
+        .out    (suf    )
+    );
 
-    gnt     = '0;
-    gnt_vld = 1'b0;
-    gnt_idx = '0;
-    idx     = '0;
+    assign lower_mask = suf >> 1;
+    assign req_hi     = req & ~lower_mask;
+    assign req_lo     = req & lower_mask;
 
-    for (int i = 0; i < N; i++) begin
-        // 窄位回绕：ptr + i 在 SUM_W 位内，减一次 N 即可，避免 32 位取模
-        sum = {1'b0, ptr} + SUM_W'(i);
-        idx = IDX_W'(sum >= N_LIMIT ? (sum - N_LIMIT) : sum);
-        if (!gnt_vld && req[idx]) begin
-            gnt[idx] = 1'b1;
-            gnt_vld  = 1'b1;
-            gnt_idx  = idx;
-        end
-    end
-end
+    pri_tree #(
+        .N  (N  )
+    ) U_HI (
+        .req    (req_hi ),
+        .gnt    (gnt_hi )
+    );
 
-assign ptr_en  = gnt_vld & upd;
-assign nxt_ptr = (gnt_idx == IDX_W'(N - 1)) ? '0 : (gnt_idx + 1'b1);
+    pri_tree #(
+        .N  (N  )
+    ) U_LO (
+        .req    (req_lo ),
+        .gnt    (gnt_lo )
+    );
 
-dffr #(
-    .W          (IDX_W  ),
-    .RESET_VAL  ('0     )
-) U_PTR (
-    .clk    (clk        ),
-    .rst_n  (rst_n      ),
-    .en     (ptr_en     ),
-    .d      (nxt_ptr    ),
-    .q      (ptr        )
-);
+    assign gnt     = (|gnt_hi) ? gnt_hi : gnt_lo;
+    assign gnt_vld = |req;
+    assign ptr_en  = gnt_vld & upd;
+    assign nxt_ptr = (gnt << 1) | (gnt >> (N-1));
+
+    dffr #(
+        .W          (N          ),
+        .RESET_VAL  (PTR_RESET  )
+    ) U_PTR (
+        .clk    (clk        ),
+        .rst_n  (rst_n      ),
+        .en     (ptr_en     ),
+        .d      (nxt_ptr    ),
+        .q      (ptr        )
+    );
 
 `ifdef SVA_ON
 `include "arbiter_rr.sva"

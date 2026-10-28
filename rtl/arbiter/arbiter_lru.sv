@@ -1,7 +1,7 @@
 `default_nettype none
 //==============================================================================
 // Module : arbiter_lru
-// Description : 最近最少使用仲裁，优先授权等待最久的请求
+// Description : 最近最少使用仲裁，max_tree 选年龄最大者，O(log N) 选择
 // Features :
 //   - 输出独热 gnt，gnt_vld=OR(req)
 //   - 每路维护“距上次授权”的饱和年龄，年龄最大者优先
@@ -12,7 +12,7 @@
 // Limitations :
 //   - 年龄计数器饱和后可能出现并列，退化为固定索引优先
 //   - 只记录授权历史，不记录请求到达顺序
-//   - upd 必须与当前 gnt 的消费拍对齐；upd 恒 1 等价于逐拍推进
+//   - 面积随 N*AGE_W 线性增长，选择深度 log2(N)
 //==============================================================================
 module arbiter_lru #(
     parameter   int N   =   4
@@ -25,54 +25,42 @@ module arbiter_lru #(
     output  logic           gnt_vld
 );
 
-    localparam int IDX_W   = (N > 1) ? $clog2(N) : 1;
-    localparam int AGE_W   = (N > 1) ? ($clog2(N) + 1) : 1;
-    localparam logic [AGE_W -1:0] AGE_MAX = '1;
+    localparam int AGE_W = (N > 1) ? ($clog2(N) + 1) : 1;
+    localparam logic [AGE_W-1:0] AGE_MAX = '1;
 
     logic [N*AGE_W -1:0]    age         ;
     logic [N*AGE_W -1:0]    nxt_age     ;
-    logic [IDX_W   -1:0]    gnt_idx     ;
-    logic [IDX_W   -1:0]    sel         ;
-    logic                   sel_found   ;
-    logic [AGE_W   -1:0]    best_age    ;
+    logic [AGE_W   -1:0]    max_age_nc  ;
+    logic                   unused_nc   ;
     logic                   age_en      ;
 
+    max_tree #(
+        .N  (N      ),
+        .W  (AGE_W  )
+    ) U_MAX (
+        .vld    (req        ),
+        .val    (age        ),
+        .onehot (gnt        ),
+        .max    (max_age_nc )
+    );
+
+    assign unused_nc = &{1'b0, max_age_nc};
+    assign gnt_vld   = |req;
+    assign age_en    = gnt_vld & upd;
+
 always_comb begin
-    gnt       = '0;
-    gnt_vld   = 1'b0;
-    gnt_idx   = '0;
-    sel       = '0;
-    sel_found = 1'b0;
-    best_age  = '0;
-
     for (int i = 0; i < N; i++) begin
-        if (req[i] && (!sel_found || (age[i*AGE_W +: AGE_W] > best_age))) begin
-            sel_found = 1'b1;
-            best_age  = age[i*AGE_W +: AGE_W];
-            sel       = IDX_W'(i);
-        end
-    end
-
-    if (sel_found) begin
-        gnt[sel] = 1'b1;
-        gnt_vld  = 1'b1;
-        gnt_idx  = sel;
-    end
-
-    for (int i = 0; i < N; i++) begin
-        if (gnt_vld && (gnt_idx == IDX_W'(i))) begin
-            nxt_age[i*AGE_W +: AGE_W] = '0;
-        end else if (gnt_vld && (age[i*AGE_W +: AGE_W] == AGE_MAX)) begin
-            nxt_age[i*AGE_W +: AGE_W] = AGE_MAX;
-        end else if (gnt_vld) begin
-            nxt_age[i*AGE_W +: AGE_W] = age[i*AGE_W +: AGE_W] + 1'b1;
-        end else begin
+        if (!age_en) begin
             nxt_age[i*AGE_W +: AGE_W] = age[i*AGE_W +: AGE_W];
+        end else if (gnt[i]) begin
+            nxt_age[i*AGE_W +: AGE_W] = '0;
+        end else if (age[i*AGE_W +: AGE_W] == AGE_MAX) begin
+            nxt_age[i*AGE_W +: AGE_W] = AGE_MAX;
+        end else begin
+            nxt_age[i*AGE_W +: AGE_W] = age[i*AGE_W +: AGE_W] + 1'b1;
         end
     end
 end
-
-assign age_en = gnt_vld & upd;
 
 dffr #(
     .W          (N*AGE_W    ),

@@ -1,6 +1,14 @@
-// bin2ohot 参数检查（仅验证，不参与综合）
+// bin2ohot 参数检查与组合断言（由 SVA_ON 控制 include）
+
 initial begin
-    if (W < 1) begin
-        $fatal(1, "[%m] W must be >= 1, got %0d", W);
+    if (N < 1) begin
+        $fatal(1, "[%m] N must be >= 1, got %0d", N);
+    end
+end
+
+// 有效输出必须是独热；越界输入输出全 0
+always_comb begin
+    if (|ohot) begin
+        assert ($onehot(ohot));
     end
 end

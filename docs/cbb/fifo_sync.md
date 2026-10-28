@@ -86,7 +86,7 @@ fifo_sync #(
 | 未覆盖项 | 复位发生在传输中、非法 `DEPTH` 的参数检查未跑（仅验证合法参数路径）、`rd_data` 读 mux 时序、门级/综合面积 |
 
 ## 9. 微架构与数据流 [C]
-- **模块划分**：单模块，无子模块。内部例化 `U_WR_PTR` / `U_RD_PTR` / `U_ENTRY_VLD` 三个 `dffr`，以及 `gen_mem[i].U_MEM` 共 `DEPTH` 个无复位 `dff`。
+- **模块划分**：内部例化 `U_WR_PTR` / `U_RD_PTR` / `U_ENTRY_VLD` / `U_EMPTY` / `U_FULL` 五个 `dffr`、两个 `bin2ohot`（指针 → 独热）以及 `gen_mem[i].U_MEM` 共 `DEPTH` 个无复位 `dff`。
 - **框图**：
 
 ```text
@@ -96,15 +96,16 @@ fifo_sync #(
   wr_rdy  <--|                                                  |   (mem[rd_ptr] 组合选择)
              | U_WR_PTR : dffr[PTR_W]  en=wr_en                 |
              | U_RD_PTR : dffr[PTR_W]  en=rd_en                 |
+             | U_WR_OH / U_RD_OH : bin2ohot(ptr) -> wr_oh/rd_oh |
   rd_vld  <--| U_ENTRY_VLD : dffr[DEPTH] en=(wr_en | rd_en)     |
   rd_rdy  -->|   nxt_entry_vld = (entry & ~rd_mask) | wr_mask     |
-             |                                                  |
-  full    <--| &entry_vld                                       |
-  empty   <--| ~|entry_vld                                      |
+             | U_EMPTY / U_FULL : dffr, en=(wr_en | rd_en)      |
+  full    <--|   q = &nxt_entry_vld                            |
+  empty   <--|   q = ~|nxt_entry_vld                           |
              +--------------------------------------------------+
 ```
 
-- **数据流**：写侧在 `wr_en` 时把 `wr_data` 写入 `mem[wr_ptr]`（`mem` 是 packed 二维数组 `[DEPTH-1:0][DATA_W-1:0]`），同时置位 `entry_vld[wr_ptr]` 并推进 `wr_ptr`；读侧 `rd_data` 组合选择 `mem[rd_ptr]`，`rd_en` 时清 `entry_vld[rd_ptr]` 并推进 `rd_ptr`。`entry_vld` 的更新用独热掩码：`(entry_vld & ~rd_mask) | wr_mask`，同拍命中同一项时写优先；`wr_mask` / `rd_mask` 由 `1 << ptr` 生成，避免每项一个比较器。
+- **数据流**：写侧在 `wr_en` 时把 `wr_data` 写入 `mem[wr_ptr]`（`mem` 是 packed 二维数组 `[DEPTH-1:0][DATA_W-1:0]`），同时置位 `entry_vld[wr_ptr]` 并推进 `wr_ptr`；读侧 `rd_data` 组合选择 `mem[rd_ptr]`，`rd_en` 时清 `entry_vld[rd_ptr]` 并推进 `rd_ptr`。`entry_vld` 的更新用独热掩码：`(entry_vld & ~rd_mask) | wr_mask`，同拍命中同一项时写优先；`wr_mask` / `rd_mask` 由 `bin2ohot` 把指针译码成独热，避免每项一个比较器；`full` / `empty` 由 `nxt_entry_vld` 译码后寄存，输出不再直接组合译码。
 - **关键寄存器/存储体**：
 
 | 名称 | 用途 | 复位 | 更新条件（en） |
@@ -113,11 +114,14 @@ fifo_sync #(
 | `entry_vld` | 每项有效位 | 复位为 0（`dffr`） | `wr_en \| rd_en` |
 | `wr_ptr` | 写指针 | 复位为 0（`dffr`） | `wr_en` |
 | `rd_ptr` | 读指针 | 复位为 0（`dffr`） | `rd_en` |
+| `wr_oh` / `rd_oh` | 指针独热 | 组合（`bin2ohot`） | 跟随 `wr_ptr` / `rd_ptr` |
+| `empty_q` | 空标志 | 复位为 1（`dffr`） | `wr_en \| rd_en` |
+| `full_q` | 满标志 | 复位为 0（`dffr`） | `wr_en \| rd_en` |
 
-- **关键设计决策**：用 `entry_vld` 有效位向量直接译码 `full` / `empty`，省去独立计数器及其比较逻辑，同时保持 `DEPTH` 位宽整体门控；`DEPTH` 限制为 2 的幂，指针自然回绕；读采用 show-ahead，读延迟 0 拍。`rd_ptr` 与 `wr_ptr` 指向同一条目只可能发生在全满（此时 `wr_rdy=0` 禁止写）或全空（此时 `rd_vld=0` 禁止读），因此不存在同拍同地址读写冲突；`nxt_entry_vld` 用独热掩码组合，保证万一同拍命中同一项时写入优先。
+- **关键设计决策**：`full` / `empty` 由 `nxt_entry_vld` 译码后寄存，切断 `entry_vld → full/empty → wr_rdy/rd_vld` 的组合路径；寄存值与 `entry_vld` 同一拍更新，所以读写时序与组合译码版本一致。`DEPTH` 限制为 2 的幂，指针自然回绕；读采用 show-ahead，读延迟 0 拍。`rd_ptr` 与 `wr_ptr` 指向同一条目只可能发生在全满（此时 `wr_rdy=0` 禁止写）或全空（此时 `rd_vld=0` 禁止读），因此不存在同拍同地址读写冲突；`nxt_entry_vld` 用独热掩码组合，保证万一同拍命中同一项时写入优先。
 
 ## 10. 状态机 [C]
-不适用。模块是纯数据流结构，没有多步控制序列；`full` / `empty` 由 `entry_vld` 直接译码，指针只在握手成立时推进，不需要 FSM，也不存在非法状态编码。
+不适用。模块是纯数据流结构，没有多步控制序列；`full` / `empty` 由 `nxt_entry_vld` 译码后寄存，指针只在握手成立时推进，不需要 FSM，也不存在非法状态编码。
 
 ## 11. 时序、流水线与 PPA [C]
 | 场景 | 延迟 | 吞吐 | 说明 |

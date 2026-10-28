@@ -75,13 +75,13 @@ arbiter_qrr #(
 | 项 | 结果 |
 |---|---|
 | `quality_gate.py` | PASS（0 error） |
-| 定向 TB | `tb/arbiter/arbiter_qrr_tb.sv` PASS：`N=1`、等 QoS `{1,1,1,1}`、混合 QoS `{3,1,2,0}`、双高 QoS `{2,0,2,0}` 四组，各跑 200 拍随机 scoreboard、最高 QoS 独占、低 QoS 回退、无请求、`upd=0` 冻结/`upd=1` 恢复 |
+| 定向 TB | `tb/arbiter/arbiter_qrr_tb.sv` PASS：`N=1`、等 QoS `{1,1,1,1}`、混合 QoS `{3,1,2,0}`、双高 QoS `{2,0,2,0}` 四组，各跑 200 拍随机 scoreboard、最高 QoS 独占、低 QoS 回退、无请求、`upd=0` 冻结/`upd=1` 恢复；`tb/arbiter/arbiter_scale_tb.sv` 覆盖 `N=64/128` |
 | SVA | `arbiter_qrr.sva`：参数检查、`gnt` 独热、`gnt_vld == OR(req)`、授权属于请求、授权只落在最高 QoS 组；指针稳定性由内部 `arbiter_rr.sva` 覆盖；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`） |
-| 未覆盖项 | `QOS_W > 3`、运行期改 QoS、`N > 8`、`req` 为 X/Z、门级/综合时序与面积、形式化验证 |
+| 未覆盖项 | `QOS_W > 3`、运行期改 QoS、`req` 为 X/Z、门级/综合时序与面积、形式化验证 |
 
 ## 9. 微架构与数据流 [C]
-- **模块划分**：本模块做 QoS 分组，组内仲裁直接例化 `arbiter_rr`，不重复实现轮询算法。
+- **模块划分**：本模块用 `max_tree` 求最高 QoS，组内仲裁直接例化 `arbiter_rr`，不重复实现轮询算法。
 - **框图**：
 
 ```text
@@ -89,7 +89,7 @@ arbiter_qrr #(
      |         |
      v         v
   +---------------------------+
-  | 求请求中的最高 QoS          |--max_qos
+  | max_tree 求最高 QoS         |--max_qos
   | req_hi = req & (qos==max)  |--req_hi[N]
   +-------------+-------------+
                 |
@@ -100,16 +100,16 @@ arbiter_qrr #(
 ```
 
 - **数据流**：
-  - QoS 分组：遍历 `req` 求最高 `qos`；再把 `qos` 等于最高值的请求拼成 `req_hi`。
+  - QoS 分组：`max_tree` 求请求中的最高 `qos`；再把 `qos` 等于最高值的请求拼成 `req_hi`。
   - 组内仲裁：`arbiter_rr` 对 `req_hi` 做指针轮询，授权被消费（`gnt_vld & upd`）后指针推进到下一路。
   - 输出：`gnt`、`gnt_vld` 直接来自 `arbiter_rr`；`gnt_vld` 恒等于 `OR(req)`（只要存在请求，最高组必非空）。
 - **关键寄存器/存储体**：
 
 | 名称 | 用途 | 复位 | 更新条件（en） |
 |---|---|---|---|
-| `U_RR.ptr` | 最高 QoS 组内轮询指针 | `dffr` 复位 0 | 组内授权有效且 `upd=1` |
+| `U_RR.ptr` | 最高 QoS 组内轮询指针（one-hot） | `dffr` 复位 bit0 | 组内授权有效且 `upd=1` |
 
-- **关键设计决策**：QoS 只做分组，不在组内引入第二套指针；复用 `arbiter_rr` 保证同 QoS 公平，也便于 `arbiter_wrapper` 统一维护。最高 QoS 用逐路比较得到，避免编码优先级表。
+- **关键设计决策**：QoS 只做分组，不在组内引入第二套指针；复用 `arbiter_rr` 保证同 QoS 公平，也便于 `arbiter_wrapper` 统一维护。最高 QoS 用 `max_tree` 树形比较得到，深度 `O(log N)`，避免编码优先级表。
 
 ## 10. 状态机 [C]
 不适用。模块由组合分组 + `arbiter_rr` 的指针寄存器组成，没有多步控制序列或状态编码。
@@ -120,9 +120,9 @@ arbiter_qrr #(
 | 正常授权 | 组合（0 拍） | 1 次授权/拍 | 最高 QoS 比较 + RR 扫描 |
 | 无请求 | 组合 | 0 | `gnt=0`，指针保持 |
 
-- **关键路径/流水线**：`qos → 最高 QoS 比较 → req_hi → RR 扫描 → gnt`，比单级 RR 多一级 `N` 路比较；`N` 大时可外层 `reg_slice` 切分。
+- **关键路径/流水线**：`qos → max_tree → req_hi → arbiter_rr 树形轮询 → gnt`，两级均为 `O(log N)` 深度；不做流水。
 - **反压路径**：无。仲裁核不感知下游 ready。
-- **面积/功耗**：`N` 路 QoS 比较器 + `arbiter_rr` 的 `N` 位扫描与 `IDX_W` 个指针触发器；无请求时指针 `en=0`。
+- **面积/功耗**：`max_tree` 的 `O(N)` 比较器 + `arbiter_rr` 的 `N` 位 one-hot 指针与优先级树；无请求时指针 `en=0`。
 - **取舍**：两级结构清晰、复用 RR；代价是多一级组合延迟，低 QoS 可能饿死。
 
 ## 12. 风险与未覆盖项 [C]

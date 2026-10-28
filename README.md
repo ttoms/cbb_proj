@@ -40,11 +40,7 @@ cbb_proj/
 ```bash
 export MY_ENV=/path/to/my_env        # 改成你本机的 my_env 路径
 git clone git@github.com:ttoms/my_env.git "$MY_ENV"
-ln -sfn "$MY_ENV/skills/rtl-developer" ~/.claude/skills/rtl-developer
-mkdir -p ~/.claude/agents
-for a in rtl-architect rtl-developer rtl-verifier; do
-    ln -sfn "$MY_ENV/agents/$a.md" ~/.claude/agents/$a.md
-done
+bash "$MY_ENV/bootstrap.sh"
 ```
 
 之后更新底层只需 `git -C "$MY_ENV" pull`，所有项目共用这一份。

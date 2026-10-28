@@ -21,14 +21,19 @@ a_gnt_subset: assert property (
     @(posedge clk) disable iff (!rst_n) ((gnt & ~req) == '0)
 );
 
+// 指针始终 one-hot
+a_ptr_onehot: assert property (
+    @(posedge clk) disable iff (!rst_n) $onehot(ptr)
+);
+
 // 无授权或授权未被消费时 ptr 保持
 a_ptr_stable: assert property (
     @(posedge clk) disable iff (!rst_n) (!gnt_vld || !upd) |=> $stable(ptr)
 );
 
-// 授权被消费后 ptr 指向被授权索引的下一路
+// 授权被消费后 ptr 旋转到被授权索引的下一路
 a_ptr_advance: assert property (
     @(posedge clk) disable iff (!rst_n) (gnt_vld && upd) |=> (
-        ptr == (($past(gnt_idx) == IDX_W'(N - 1)) ? '0 : ($past(gnt_idx) + 1'b1))
+        ptr == (($past(gnt) << 1) | ($past(gnt) >> (N-1)))
     )
 );

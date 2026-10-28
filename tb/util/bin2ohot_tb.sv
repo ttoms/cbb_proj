@@ -1,40 +1,55 @@
 `timescale 1ns/1ps
 
-// bin2ohot 定向 TB：遍历全部输入值，检查输出恰好一位有效
+// bin2ohot 定向 TB：N 路输出（含非 2 的幂），in-range 独热、越界全 0
 module bin2ohot_tb;
-    localparam int W     = 4;
-    localparam int OUT_W = 1 << W;
 
-    logic [W-1:0]     bin;
-    logic [OUT_W-1:0] ohot;
-    logic [OUT_W-1:0] one;
-    int               errors = 0;
+`ifndef TB_N
+`define TB_N 5
+`endif
 
-    bin2ohot #(
-        .W (W)
-    ) DUT (
-        .bin  (bin),
-        .ohot (ohot)
-    );
+localparam int N     = `TB_N;
+localparam int SEL_W = (N > 1) ? $clog2(N) : 1;
 
-    initial begin
-        one = OUT_W'(1);
+logic [SEL_W-1:0] bin;
+logic [N-1:0]     ohot;
+logic [N-1:0]     one;
+int               errors = 0;
 
-        for (int i = 0; i < (1 << W); i++) begin
-            bin = i[W-1:0];
-            #1;
+bin2ohot #(
+    .N (N)
+) DUT (
+    .bin  (bin),
+    .ohot (ohot)
+);
+
+initial begin
+    one = N'(1);
+
+    for (int i = 0; i < (1 << SEL_W); i++) begin
+        bin = i[SEL_W-1:0];
+        #1;
+        if (i < N) begin
             if (ohot !== (one << i)) begin
                 errors++;
-                $display("FAIL bin=%0d: ohot=%0h exp=%0h", i, ohot, one << i);
+                $display("FAIL N=%0d bin=%0d: ohot=%0h exp=%0h",
+                         N, i, ohot, one << i);
             end
             if ($countones(ohot) != 1) begin
                 errors++;
-                $display("FAIL bin=%0d: not one-hot %0h", i, ohot);
+                $display("FAIL N=%0d bin=%0d: not one-hot %0h", N, i, ohot);
+            end
+        end else begin
+            if (ohot !== '0) begin
+                errors++;
+                $display("FAIL N=%0d bin=%0d: out-of-range not zero %0h",
+                         N, i, ohot);
             end
         end
-
-        if (errors == 0) $display("bin2ohot_tb PASS");
-        else             $display("bin2ohot_tb FAIL");
-        $finish;
     end
+
+    if (errors == 0) $display("bin2ohot_tb PASS (N=%0d)", N);
+    else             $display("bin2ohot_tb FAIL (N=%0d)", N);
+    $finish;
+end
+
 endmodule
