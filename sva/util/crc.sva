@@ -1,0 +1,18 @@
+initial begin
+    if (!(CRC_W >= 1 && CRC_W <= 512)) begin
+        $fatal(1, "[%m] CRC_W out of range, got %0d", CRC_W);
+    end
+    if (!(DATA_W >= 1 && DATA_W <= 1024)) begin
+        $fatal(1, "[%m] DATA_W out of range, got %0d", DATA_W);
+    end
+end
+
+a_state_stable: assert property (
+    @(posedge clk) disable iff (!rst_n)
+    (!init && !en) |=> (crc_q == $past(crc_q))
+);
+
+a_init_priority: assert property (
+    @(posedge clk) disable iff (!rst_n)
+    init |=> (crc_q == INIT)
+);
