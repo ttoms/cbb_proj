@@ -1,0 +1,26 @@
+initial begin
+    if (!(DATA_W > 0 && DATA_W <= 1024)) begin
+        $fatal(1, "[%m] DATA_W out of range, got %0d", DATA_W);
+    end
+    if (!(DEPTH >= 2 && (DEPTH & (DEPTH - 1)) == 0)) begin
+        $fatal(1, "[%m] DEPTH must be a power of two >= 2, got %0d", DEPTH);
+    end
+    if (!(AF_THRESH >= 1 && AF_THRESH <= DEPTH)) begin
+        $fatal(1, "[%m] AF_THRESH out of range, got %0d", AF_THRESH);
+    end
+    if (!(AE_THRESH >= 0 && AE_THRESH < DEPTH)) begin
+        $fatal(1, "[%m] AE_THRESH out of range, got %0d", AE_THRESH);
+    end
+end
+
+a_count_range: assert property (
+    @(posedge clk) disable iff (!rst_n) (count <= DEPTH)
+);
+
+a_af_match: assert property (
+    @(posedge clk) disable iff (!rst_n) (almost_full == (count >= AF_THRESH))
+);
+
+a_ae_match: assert property (
+    @(posedge clk) disable iff (!rst_n) (almost_empty == (count <= AE_THRESH))
+);
