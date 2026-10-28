@@ -29,6 +29,11 @@ a_rdy_valid: assert property (
     @(posedge clk) disable iff (!rst_n) ((in_rdy & ~in_vld) == '0)
 );
 
+// upd 推进时必须对应实际被选中的通道
+a_upd_matches_sel: assert property (
+    @(posedge clk) disable iff (!rst_n) (gnt_vld && arb_upd) |-> (gnt == sel_oh)
+);
+
 // 反压期间 out_vld 保持、out_pld 稳定
 a_stall_stable: assert property (
     @(posedge clk) disable iff (!rst_n) (out_vld && !out_rdy) |=> (out_vld && $stable(out_pld))

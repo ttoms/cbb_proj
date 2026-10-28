@@ -60,12 +60,16 @@ module strmux #(
     logic           hold_clr    ;
     logic           hold_en     ;
     logic           arb_upd     ;
+    logic [N -1:0]  arb_req     ;
 
     assign hold_vld = |hold_oh;
     assign sel_oh   = hold_vld ? hold_oh : gnt;
 
     assign out_vld = hold_vld ? |(in_vld & hold_oh) : gnt_vld;
     assign in_rdy  = {N{out_vld & out_rdy}} & sel_oh;
+
+    // 锁存期间只把被锁通道喂给仲裁器：保证 upd 推进的是实际被服务的通道。
+    assign arb_req = hold_vld ? hold_oh : in_vld;
 
     assign sel_hop = |(in_hop & sel_oh);
     assign sel_top = |(in_top & sel_oh);
@@ -103,7 +107,7 @@ arbiter_wrapper #(
     .clk        (clk        ),
     .rst_n      (rst_n      ),
     .upd        (arb_upd    ),
-    .req        (in_vld     ),
+    .req        (arb_req    ),
     .weight     (weight     ),
     .qos        (qos        ),
     .gnt        (gnt        ),

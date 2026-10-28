@@ -90,7 +90,7 @@ arbmux #(
 |---|---|
 | `quality_gate.py` | PASS（0 error，0 warning；对齐后复跑） |
 | 定向 TB | `tb/arbiter/arbmux_tb.sv` PASS：`FIXED N=4`、`RR N=4`、`WRR N=4 weight=8'h83`、`LRU N=4`、`QRR N=4 qos=8'h2B`、`RR N=1` 共 6 组；每组 200 拍随机流量 + 全通道反压保持/释放 + 无请求场景，逐拍 scoreboard 校验 |
-| SVA | `arbmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、反压期间 `out_vld`/`out_pld` 稳定、`out_pld` 与被选中通道一致；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| SVA | `arbmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、`upd` 推进时 `gnt` 与被选中通道一致、反压期间 `out_vld`/`out_pld` 稳定、`out_pld` 与被选中通道一致；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
 | 未覆盖项 | packet 边界（不属于本模块）、`N > 8`、`in_vld`/`in_pld` 为 X/Z、源端违反 valid-ready 的非法输入、门级/综合时序与面积、形式化验证 |
 

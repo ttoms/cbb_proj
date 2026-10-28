@@ -102,9 +102,9 @@ strmux #(
 |---|---|
 | `quality_gate.py` | PASS（0 error，0 warning；对齐后复跑） |
 | 定向 TB | `tb/arbiter/strmux_tb.sv` PASS：`FIXED+FLIT`、`RR+FLIT`、`FIXED+PKT`、`RR+PKT`、`WRR+PKT weight=8'h83`、`LRU+PKT`、`QRR+PKT qos=8'h2B`、`N=1+PKT` 共 8 组；每组 300 拍随机 packet 流量（`MAX_PKT=4`，packet 内注入 `vld` 间隙）+ 全通道反压 + 无请求场景，逐 flit scoreboard 校验 `pld`/`hop`/`top`，并检查 packet 内不换通道、packet 头不嵌套 |
-| SVA | `strmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、反压期间 `out_vld`/`out_hop`/`out_top`/`out_pld` 稳定、输出三字段与被选中通道一致；`GRAN=1` 追加头 flit 锁定、packet 内保持、尾 flit 释放三条 packet 断言；需 Verilator 5.x（`--assert -DSVA_ON`） |
+| SVA | `strmux.sva`：参数检查（`N`/`PLD_W`）+ `out_vld` 必来自有效输入、握手拍 `in_rdy` 独热、非握手拍 `in_rdy` 全零、`in_rdy` 只落在有效输入、`upd` 推进时 `gnt` 与被选中通道一致、反压期间 `out_vld`/`out_hop`/`out_top`/`out_pld` 稳定、输出三字段与被选中通道一致；`GRAN=1` 追加头 flit 锁定、packet 内保持、尾 flit 释放三条 packet 断言；需 Verilator 5.x（`--assert -DSVA_ON`） |
 | 仿真器 | iverilog 11/12 均通过；SVA 需 Verilator 5.x（`--assert -DSVA_ON`）；`verilator --lint-only -Wall` 无 WIDTH / UNUSED / %Error |
-| 未覆盖项 | `N > 8`、`GRAN=0` 下的 WRR/LRU/QRR 组合、`PLD_W=1`、`in_*` 为 X/Z、源端违反 valid-ready 或 packet 违约的非法输入、`GRAN=0` 锁存期间 `gnt` 与 `hold_oh` 不一致时的公平性偏移量化、门级/综合时序与面积、形式化验证 |
+| 未覆盖项 | `N > 8`、`GRAN=0` 下的 WRR/LRU/QRR 组合、`PLD_W=1`、`in_*` 为 X/Z、源端违反 valid-ready 或 packet 违约的非法输入、门级/综合时序与面积、形式化验证 |
 
 说明：TB 与 `arbmux_tb` 保持同一范式，直接用 packed 切片（`in_pld[i*PLD_W +: PLD_W]`）驱动负载，不经过 unpacked 数组 + `generate assign` 汇聚，以避免 Verilator 运行期不重新触发该连续赋值的限制。
 

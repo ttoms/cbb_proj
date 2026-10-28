@@ -44,6 +44,10 @@ git clone --recurse-submodules git@github.com:ttoms/cbb_proj.git
 git submodule update --init --recursive
 ```
 
+> **Download ZIP 不包含子模块内容**：GitHub 的压缩包只带 `.gitmodules`，`vendor/my_env` 会是空目录。
+> 用 ZIP 时解压后自行拉取：`git clone https://github.com/ttoms/my_env.git vendor/my_env`；
+> 需要固定版本时请用 `git clone --recurse-submodules`。
+
 `vendor/my_env` 固定到一个提交。需要更新底层 skill / 规范 / 脚本时：
 
 ```bash
