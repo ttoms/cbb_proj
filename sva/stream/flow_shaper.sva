@@ -1,0 +1,29 @@
+initial begin
+    if (!(W >= 1 && W <= 1024)) begin
+        $fatal(1, "[%m] W out of range, got %0d", W);
+    end
+    if (!(TICK_CYCLES >= 1)) begin
+        $fatal(1, "[%m] TICK_CYCLES must be >= 1, got %0d", TICK_CYCLES);
+    end
+    if (!(TOKENS_PER_TICK >= 1)) begin
+        $fatal(1, "[%m] TOKENS_PER_TICK must be >= 1, got %0d", TOKENS_PER_TICK);
+    end
+    if (!(BURST >= 1)) begin
+        $fatal(1, "[%m] BURST must be >= 1, got %0d", BURST);
+    end
+    if (!(INIT_TOKENS >= 0 && INIT_TOKENS <= BURST)) begin
+        $fatal(1, "[%m] INIT_TOKENS out of range, got %0d", INIT_TOKENS);
+    end
+end
+
+a_tokens_bound: assert property (
+    @(posedge clk) disable iff (!rst_n) (tokens <= BURST)
+);
+
+a_out_has_token: assert property (
+    @(posedge clk) disable iff (!rst_n) out_vld |-> token_ok
+);
+
+a_in_rdy_has_token: assert property (
+    @(posedge clk) disable iff (!rst_n) in_rdy |-> token_ok
+);
