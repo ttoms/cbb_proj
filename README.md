@@ -27,6 +27,7 @@ cbb_proj/
 │   ├── bus/                     # APB / AXI-Lite 粘合逻辑
 │   ├── io/                      # UART / SPI / I2C / Timer / IRQ
 │   └── util/                    # CRC / 格雷码 / 编码器 / bin-ohot / mux
+├── sva/<category>/              # 断言文件，与 rtl 同构
 ├── tb/<category>/               # 与 rtl 同构的定向 testbench
 ├── build/                       # 本地仿真产物（git 忽略）
 └── .gitignore
@@ -37,15 +38,16 @@ cbb_proj/
 本项目不自带 skill / agent / 质量门控脚本，使用前先在机器上安装 `my_env` 并注册到 Claude Code：
 
 ```bash
-git clone git@github.com:ttoms/my_env.git ~/Documents/repo/my_env
-ln -sfn ~/Documents/repo/my_env/skills/rtl-developer ~/.claude/skills/rtl-developer
+export MY_ENV=/path/to/my_env        # 改成你本机的 my_env 路径
+git clone git@github.com:ttoms/my_env.git "$MY_ENV"
+ln -sfn "$MY_ENV/skills/rtl-developer" ~/.claude/skills/rtl-developer
 mkdir -p ~/.claude/agents
 for a in rtl-architect rtl-developer rtl-verifier; do
-    ln -sfn ~/Documents/repo/my_env/agents/$a.md ~/.claude/agents/$a.md
+    ln -sfn "$MY_ENV/agents/$a.md" ~/.claude/agents/$a.md
 done
 ```
 
-之后更新底层只需 `git -C ~/Documents/repo/my_env pull`，所有项目共用这一份。
+之后更新底层只需 `git -C "$MY_ENV" pull`，所有项目共用这一份。
 本文档后续命令用 `$SKILL` 指代全局 skill：
 
 ```bash
@@ -105,6 +107,6 @@ $SKILL/scripts/align.sh rtl/basic/<module>.sv
 - 模块名小写蛇形、文件名一致，一个文件一个 `module`。
 - 控制类寄存器用 `dffr`（异步复位），数据通路寄存器用 `dff`（无复位），均显式 `en`。
 - 每个 CBB 只有一个文档 `docs/cbb/<module>.md`；复杂 CBB 在同一文档中补齐微架构、数据流、状态机等章节。
-- `.sv` 内不写断言；需要时同名 `.sva`，由 `SVA_ON` 在 `endmodule` 前 include。
+- `.sv` 内不写断言；需要时建 `sva/<category>/<module>.sva`，由 `SVA_ON` 在 `endmodule` 前 include。
 - 交付前必须通过 `quality_gate.py`（0 error）并执行 `align.sh`。
 - 不默认附带 Makefile、覆盖率报告等非模块功能向产物。

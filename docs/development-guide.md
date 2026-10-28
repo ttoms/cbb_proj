@@ -11,6 +11,7 @@
 cbb_proj/
 ├── docs/{development-guide.md, cbb-list.md, cbb/, architecture/}
 ├── rtl/<category>/              # 可综合 RTL
+├── sva/<category>/              # 断言文件，与 rtl 同构
 ├── tb/<category>/               # 定向 TB
 └── build/                       # 仿真产物，git 忽略
 ```
@@ -70,7 +71,7 @@ cbb_proj/
 - 组合逻辑用 `always_comb` + 默认值；`case` 必须有 `default`。
 - 禁止 `initial` / `force` / `#delay` / `casex` / `always @(...)` / `always_latch`。
 - **latch 唯一例外**：`icg` 行为模型可在 `always_latch` 同行加 `// gate: allow-latch`，`quality_gate.py` 行级跳过。
-- 模块 `.sv` 内不写断言；需要时建同名 `.sva`，用 `` `ifdef SVA_ON `` include。
+- 模块 `.sv` 内不写断言；需要时建 `sva/<category>/<module>.sva`，用 `` `ifdef SVA_ON `` include；仿真/断言编译加 `-I sva/<category>`。
 - 代码中不加对齐标记，交付前统一跑 `$SKILL/scripts/align.sh`。
 
 ## 5. 自检与仿真命令
@@ -90,8 +91,8 @@ iverilog -g2012 -o build/counter.simv \
 vvp build/counter.simv
 
 # 3) SVA（可选；Verilator >= 5.0）
-verilator --assert -DSVA_ON --binary --timing --top-module counter_tb \
-    rtl/basic/*.sv tb/basic/counter_tb.sv
+verilator --assert -DSVA_ON --binary --timing -I sva/basic \
+    --top-module counter_tb rtl/basic/*.sv tb/basic/counter_tb.sv
 # Verilator 4.x 不支持 --binary / --timing，只做 lint：
 # verilator --lint-only -Wall --top-module counter_tb rtl/basic/*.sv tb/basic/counter_tb.sv
 
@@ -111,6 +112,6 @@ $SKILL/scripts/align.sh rtl/basic/counter.sv
 
 ## 7. 交付与完成
 
-每个 CBB 交付：`rtl/<cat>/<module>.sv`、按需 `_tb.sv` / `.sva`、`docs/cbb/<module>.md`、交付说明。
+每个 CBB 交付：`rtl/<cat>/<module>.sv`、按需 `sva/<cat>/<module>.sva` / `tb/<cat>/<module>_tb.sv`、`docs/cbb/<module>.md`、交付说明。
 **完成定义**：checklist 全过 + `quality_gate.py` 0 error + 仿真结论明确 + 已对齐 + 文档与实现一致 + 清单状态更新。
 CBB ID 不复用；已发布件语义变更视为不兼容，必须评审。
