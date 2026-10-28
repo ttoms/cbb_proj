@@ -28,48 +28,28 @@ cbb_proj/
 │   ├── io/                      # UART / SPI / I2C / Timer / IRQ
 │   └── util/                    # CRC / 格雷码 / 编码器 / bin-ohot / mux
 ├── tb/<category>/               # 与 rtl 同构的定向 testbench
-├── vendor/my_env/               # git submodule：skill / agent / 规范 / 模板 / 对齐插件
-├── scripts/
-│   ├── quality_gate.py          # 薄包装：委托 vendor/my_env 里的同一脚本
-│   └── align.sh                 # 薄包装：委托 vendor/my_env 里的同一脚本
 ├── build/                       # 本地仿真产物（git 忽略）
 └── .gitignore
 ```
 
-## 克隆
+## 前置依赖
+
+本项目不自带 skill / agent / 质量门控脚本，使用前先在机器上安装 `my_env` 并注册到 Claude Code：
 
 ```bash
-git clone --recurse-submodules git@github.com:ttoms/cbb_proj.git
-# 已 clone 过、但没拉子模块：
-git submodule update --init --recursive
-```
-
-> **Download ZIP 不包含子模块内容**：GitHub 的压缩包只带 `.gitmodules`，`vendor/my_env` 会是空目录。
-> 用 ZIP 时解压后自行拉取：`git clone https://github.com/ttoms/my_env.git vendor/my_env`；
-> 需要固定版本时请用 `git clone --recurse-submodules`。
-
-`vendor/my_env` 固定到一个提交。需要更新底层 skill / 规范 / 脚本时：
-
-```bash
-git submodule update --remote --merge vendor/my_env
-git add vendor/my_env && git commit -m "bump my_env"
-```
-
-## skill / agent 的使用
-
-本项目只把 my_env 的文件放在 `vendor/my_env/` 下，不做注册：
-
-- skill：`vendor/my_env/skills/rtl-developer/`
-- agents：`vendor/my_env/agents/rtl-{architect,developer,verifier}.md`
-- 编码规范：`vendor/my_env/skills/rtl-developer/references/rtl-coding-standard.md`
-
-在自己的机器上使用时，自行软链或复制到 Claude Code 配置目录，例如：
-
-```bash
-ln -sfn "$PWD/vendor/my_env/skills/rtl-developer" ~/.claude/skills/rtl-developer
+git clone git@github.com:ttoms/my_env.git ~/Documents/repo/my_env
+ln -sfn ~/Documents/repo/my_env/skills/rtl-developer ~/.claude/skills/rtl-developer
+mkdir -p ~/.claude/agents
 for a in rtl-architect rtl-developer rtl-verifier; do
-    ln -sfn "$PWD/vendor/my_env/agents/$a.md" ~/.claude/agents/$a.md
+    ln -sfn ~/Documents/repo/my_env/agents/$a.md ~/.claude/agents/$a.md
 done
+```
+
+之后更新底层只需 `git -C ~/Documents/repo/my_env pull`，所有项目共用这一份。
+本文档后续命令用 `$SKILL` 指代全局 skill：
+
+```bash
+export SKILL=~/.claude/skills/rtl-developer
 ```
 
 ## 文档
@@ -78,7 +58,7 @@ done
 - [待开发 CBB 清单](docs/cbb-list.md)：50 项规划，含 P0 模板收编、P1~P3 待开发项、P4 CDC 与合并项。
 - [CBB 文档规范](docs/cbb/README.md)：每模块唯一文档的落点、简单/复杂件章节规则与一致性要求。
 - [dff 示例文档](docs/cbb/dff.md)：约 40 行的简单件填写示例。
-- 编码规范细则以 `vendor/my_env/skills/rtl-developer/references/rtl-coding-standard.md` 为准。
+- 编码规范细则以 `$SKILL/references/rtl-coding-standard.md` 为准（源在 my_env）。
 
 ## CBB 文档要求
 
@@ -104,8 +84,8 @@ P0 4 项 + P1 10 个简单件，共 14 项（CDC 不进入首批），均已发�
 
 ```bash
 # 1) 秒级自检：0 error 才算通过
-python3 scripts/quality_gate.py rtl/basic/<module>.sv
-python3 scripts/quality_gate.py rtl/basic/<module>.sv --lint   # 有 verilator 时可选
+python3 $SKILL/scripts/quality_gate.py rtl/basic/<module>.sv
+python3 $SKILL/scripts/quality_gate.py rtl/basic/<module>.sv --lint   # 有 verilator 时可选
 
 # 3) 功能仿真
 mkdir -p build
@@ -115,10 +95,10 @@ iverilog -g2012 -o build/<module>.simv \
 vvp build/<module>.simv
 
 # 4) 强制对齐
-scripts/align.sh rtl/basic/<module>.sv
+$SKILL/scripts/align.sh rtl/basic/<module>.sv
 ```
 
-`align.sh` 查找 `rtl_align` 插件的顺序：`$RTL_ALIGN_RTP` → `vendor/my_env/vim/rtl_align` → `~/.vim/plugged/rtl_align`。
+`align.sh` 通过全局 skill 调用，会自动定位 my_env 的 `vim/rtl_align`；也可用 `$RTL_ALIGN_RTP` 覆盖，最后回退 `~/.vim/plugged/rtl_align`。
 
 ## 开发基线
 

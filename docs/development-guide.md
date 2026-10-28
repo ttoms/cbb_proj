@@ -1,7 +1,8 @@
 # CBB 开发流程指南
 
 > 定位：外网个人小项目，暂按单时钟全同步；流程轻量，先跑通闭环。
-> 基线：`my_env/skills/rtl-developer`，编码细则以其规范为准。
+> 基线：`my_env` 的 `rtl-developer` skill，编码细则以其规范为准。
+> 前置：先在机器上安装 my_env 并注册全局 skill / agent，见 README「前置依赖」。
 > 不强制覆盖率/回归/形式化；没跑仿真就写“未跑”，不伪造结果。CDC 保持 P4，无需求不启动。
 
 ## 1. 目录与命名
@@ -11,12 +12,10 @@ cbb_proj/
 ├── docs/{development-guide.md, cbb-list.md, cbb/, architecture/}
 ├── rtl/<category>/              # 可综合 RTL
 ├── tb/<category>/               # 定向 TB
-├── vendor/my_env/               # git submodule：skill / agent / 规范 / 模板 / 对齐插件
-├── scripts/                     # 薄包装，委托 vendor/my_env 里的 quality_gate.py / align.sh
 └── build/                       # 仿真产物，git 忽略
 ```
 
-`vendor/my_env` 固定到一个提交；更新底层：`git submodule update --remote --merge vendor/my_env` 后提交。skill / agent 只放在子模块里，注册到 `~/.claude` 由使用者自行完成。
+工具（skill / 质量门控 / 对齐）来自全局安装的 my_env：`$SKILL=~/.claude/skills/rtl-developer`，安装见 README「前置依赖」。
 
 | 目录 | 放什么 |
 |---|---|
@@ -72,14 +71,16 @@ cbb_proj/
 - 禁止 `initial` / `force` / `#delay` / `casex` / `always @(...)` / `always_latch`。
 - **latch 唯一例外**：`icg` 行为模型可在 `always_latch` 同行加 `// gate: allow-latch`，`quality_gate.py` 行级跳过。
 - 模块 `.sv` 内不写断言；需要时建同名 `.sva`，用 `` `ifdef SVA_ON `` include。
-- 代码中不加对齐标记，交付前统一跑 `scripts/align.sh`。
+- 代码中不加对齐标记，交付前统一跑 `$SKILL/scripts/align.sh`。
 
 ## 5. 自检与仿真命令
 
 ```bash
+export SKILL=~/.claude/skills/rtl-developer
+
 # 1) 秒级文本自检（0 error 才算通过）
-python3 scripts/quality_gate.py rtl/basic/counter.sv
-python3 scripts/quality_gate.py rtl/basic/counter.sv --lint
+python3 $SKILL/scripts/quality_gate.py rtl/basic/counter.sv
+python3 $SKILL/scripts/quality_gate.py rtl/basic/counter.sv --lint
 
 # 2) 功能仿真
 mkdir -p build
@@ -95,10 +96,10 @@ verilator --assert -DSVA_ON --binary --timing --top-module counter_tb \
 # verilator --lint-only -Wall --top-module counter_tb rtl/basic/*.sv tb/basic/counter_tb.sv
 
 # 4) 强制对齐
-scripts/align.sh rtl/basic/counter.sv
+$SKILL/scripts/align.sh rtl/basic/counter.sv
 ```
 
-`align.sh` 查找顺序：`$RTL_ALIGN_RTP` → `vendor/my_env/vim/rtl_align` → `~/.vim/plugged/rtl_align`。
+`align.sh` 通过全局 skill 调用，会自动定位 my_env 的 `vim/rtl_align`；`$RTL_ALIGN_RTP` 可覆盖，最后回退 `~/.vim/plugged/rtl_align`。
 
 ## 6. 评审 checklist
 
