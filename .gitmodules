@@ -1,0 +1,4 @@
+[submodule "vendor/my_env"]
+	path = vendor/my_env
+	url = https://github.com/ttoms/my_env.git
+	branch = main

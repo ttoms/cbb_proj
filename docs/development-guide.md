@@ -11,9 +11,12 @@ cbb_proj/
 ├── docs/{development-guide.md, cbb-list.md, cbb/, architecture/}
 ├── rtl/<category>/              # 可综合 RTL
 ├── tb/<category>/               # 定向 TB
-├── scripts/                     # quality_gate.py / align.sh
+├── vendor/my_env/               # git submodule：skill / agent / 规范 / 模板 / 对齐插件
+├── scripts/                     # 薄包装，委托 vendor/my_env 里的 quality_gate.py / align.sh
 └── build/                       # 仿真产物，git 忽略
 ```
+
+`vendor/my_env` 固定到一个提交；更新底层：`git submodule update --remote --merge vendor/my_env` 后提交。skill / agent 只放在子模块里，注册到 `~/.claude` 由使用者自行完成。
 
 | 目录 | 放什么 |
 |---|---|
@@ -95,7 +98,7 @@ verilator --assert -DSVA_ON --binary --timing --top-module counter_tb \
 scripts/align.sh rtl/basic/counter.sv
 ```
 
-`align.sh` 查找顺序：`$RTL_ALIGN_RTP` → `~/.vim/plugged/rtl_align` → `$MY_ENV/vim/rtl_align`。
+`align.sh` 查找顺序：`$RTL_ALIGN_RTP` → `vendor/my_env/vim/rtl_align` → `~/.vim/plugged/rtl_align`。
 
 ## 6. 评审 checklist
 

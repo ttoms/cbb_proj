@@ -28,11 +28,44 @@ cbb_proj/
 │   ├── io/                      # UART / SPI / I2C / Timer / IRQ
 │   └── util/                    # CRC / 格雷码 / 编码器 / bin-ohot / mux
 ├── tb/<category>/               # 与 rtl 同构的定向 testbench
+├── vendor/my_env/               # git submodule：skill / agent / 规范 / 模板 / 对齐插件
 ├── scripts/
-│   ├── quality_gate.py          # 秒级文本自检
-│   └── align.sh                 # 非交互 RTL 对齐
+│   ├── quality_gate.py          # 薄包装：委托 vendor/my_env 里的同一脚本
+│   └── align.sh                 # 薄包装：委托 vendor/my_env 里的同一脚本
 ├── build/                       # 本地仿真产物（git 忽略）
 └── .gitignore
+```
+
+## 克隆
+
+```bash
+git clone --recurse-submodules git@github.com:ttoms/cbb_proj.git
+# 已 clone 过、但没拉子模块：
+git submodule update --init --recursive
+```
+
+`vendor/my_env` 固定到一个提交。需要更新底层 skill / 规范 / 脚本时：
+
+```bash
+git submodule update --remote --merge vendor/my_env
+git add vendor/my_env && git commit -m "bump my_env"
+```
+
+## skill / agent 的使用
+
+本项目只把 my_env 的文件放在 `vendor/my_env/` 下，不做注册：
+
+- skill：`vendor/my_env/skills/rtl-developer/`
+- agents：`vendor/my_env/agents/rtl-{architect,developer,verifier}.md`
+- 编码规范：`vendor/my_env/skills/rtl-developer/references/rtl-coding-standard.md`
+
+在自己的机器上使用时，自行软链或复制到 Claude Code 配置目录，例如：
+
+```bash
+ln -sfn "$PWD/vendor/my_env/skills/rtl-developer" ~/.claude/skills/rtl-developer
+for a in rtl-architect rtl-developer rtl-verifier; do
+    ln -sfn "$PWD/vendor/my_env/agents/$a.md" ~/.claude/agents/$a.md
+done
 ```
 
 ## 文档
@@ -41,7 +74,7 @@ cbb_proj/
 - [待开发 CBB 清单](docs/cbb-list.md)：50 项规划，含 P0 模板收编、P1~P3 待开发项、P4 CDC 与合并项。
 - [CBB 文档规范](docs/cbb/README.md)：每模块唯一文档的落点、简单/复杂件章节规则与一致性要求。
 - [dff 示例文档](docs/cbb/dff.md)：约 40 行的简单件填写示例。
-- 编码规范细则以 `my_env/skills/rtl-developer/references/rtl-coding-standard.md` 为准。
+- 编码规范细则以 `vendor/my_env/skills/rtl-developer/references/rtl-coding-standard.md` 为准。
 
 ## CBB 文档要求
 
@@ -66,10 +99,7 @@ P0 4 项 + P1 10 个简单件，共 14 项（CDC 不进入首批），均已发�
 ## 快速开始
 
 ```bash
-# 1) 指向 my_env（align.sh 找不到插件时需要）
-export MY_ENV=/path/to/my_env
-
-# 2) 秒级自检：0 error 才算通过
+# 1) 秒级自检：0 error 才算通过
 python3 scripts/quality_gate.py rtl/basic/<module>.sv
 python3 scripts/quality_gate.py rtl/basic/<module>.sv --lint   # 有 verilator 时可选
 
@@ -84,7 +114,7 @@ vvp build/<module>.simv
 scripts/align.sh rtl/basic/<module>.sv
 ```
 
-`align.sh` 查找 `rtl_align` 插件的顺序：`$RTL_ALIGN_RTP` → `~/.vim/plugged/rtl_align` → `$MY_ENV/vim/rtl_align`。
+`align.sh` 查找 `rtl_align` 插件的顺序：`$RTL_ALIGN_RTP` → `vendor/my_env/vim/rtl_align` → `~/.vim/plugged/rtl_align`。
 
 ## 开发基线
 
