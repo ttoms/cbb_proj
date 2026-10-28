@@ -1,0 +1,38 @@
+initial begin
+    if (!(IN_W >= 1 && IN_W <= 1024)) begin
+        $fatal(1, "[%m] IN_W out of range, got %0d", IN_W);
+    end
+    if (!(OUT_W >= 1 && OUT_W <= 1024)) begin
+        $fatal(1, "[%m] OUT_W out of range, got %0d", OUT_W);
+    end
+    if (!(IN_W == OUT_W ||
+          (IN_W > OUT_W && (IN_W % OUT_W) == 0) ||
+          (OUT_W > IN_W && (OUT_W % IN_W) == 0))) begin
+        $fatal(1, "[%m] width ratio must be an integer, got IN_W=%0d OUT_W=%0d",
+               IN_W, OUT_W);
+    end
+end
+
+generate
+    if (IN_W > OUT_W) begin : g_w2n_chk
+        a_keep_nonzero: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            (in_vld && in_rdy) |-> (|in_keep)
+        );
+
+        a_keep_contig: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            (in_vld && in_rdy) |-> ((in_keep & (in_keep + 1'b1)) == '0)
+        );
+    end else begin : g_n2w_chk
+        a_keep_nonzero: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            out_vld |-> (|out_keep)
+        );
+
+        a_keep_contig: assert property (
+            @(posedge clk) disable iff (!rst_n)
+            out_vld |-> ((out_keep & (out_keep + 1'b1)) == '0)
+        );
+    end
+endgenerate
